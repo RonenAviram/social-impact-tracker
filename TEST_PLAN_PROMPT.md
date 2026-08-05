@@ -74,11 +74,42 @@
 
 ---
 
-## תכנית הבדיקות
+## דרישות מקדימות — בצע לפני שמתחילים
 
-השתמש ב-Claude in Chrome כדי לנווט לאתר ולהריץ את כל הבדיקות. כל בדיקה שנכשלת — תקן את הקוד, push ל-GitHub, ותמשיך.
+**נחה את המשתמש (רונן) צעד אחר צעד דרך הצעדים הבאים. אל תתחיל בדיקות עד שכולם עוברים:**
 
-**חשוב:** אתה אחראי לנקות אחרי עצמך — בסוף הבדיקות, מחק את כל ה-test data מ-Supabase דרך SQL Editor כדי להשאיר את ה-DB נקי.
+**P1. Chrome extension מחובר**
+- ודא שיש לך גישה לכלי `mcp__claude-in-chrome__*`
+- נסה `tabs_context_mcp` — אם עובד, ה-extension מחובר
+- אם לא — בקש מרונן להתחבר לתוסף Claude in Chrome
+
+**P2. Supabase מחובר**
+- נווט דרך Chrome ל: `https://supabase.com/dashboard/project/siufqucjxcuhdfexzfkq`
+- אם לא מחובר — בקש מרונן להתחבר לחשבון Supabase
+
+**P3. DB נקי — אפס content entries**
+- ב-Supabase SQL Editor, הרץ:
+```sql
+SELECT count(*) FROM content_entries WHERE campaign_id = '87ffac94-18ab-43e3-bedb-f7cc877973f8';
+```
+- אם התוצאה > 0, הרץ:
+```sql
+DELETE FROM content_entries WHERE campaign_id = '87ffac94-18ab-43e3-bedb-f7cc877973f8';
+```
+- זה קריטי — חלק A בודק empty state ויכשל אם יש נתונים
+
+**P4. אישור מרונן**
+- הצג לרונן: "דרישות מקדימות עברו. מוכן להריץ ~40 בדיקות. בדרך אתקן באגים חוסמים מיד, באגים קוסמטיים אתעד ואתקן בסוף. בסיום — push אחד ודיווח. להתחיל?"
+
+---
+
+## כללי עבודה
+
+- **כלי עבודה:** השתמש ב-Claude in Chrome לנווט ולתפעל את האתר. Supabase SQL Editor דרך Chrome.
+- **באג חוסם** (מונע המשך בדיקות) → תקן את הקוד מיד, commit, והמשך. **אל תעשה push** — צבור commits.
+- **באג קוסמטי** (לא מונע המשך) → תעד והמשך. תקן בסוף.
+- **Push** — push אחד מרוכז בסוף. רונן יריץ `git push` מה-CMD כי הסנדבוקס לא יכול לעשות push ישירות.
+- **ניקוי** — בסוף הבדיקות, נקה את כל ה-test data מ-Supabase.
 
 ### חלק A — Empty state ודשבורד ריק (dashboard.html)
 
@@ -372,4 +403,4 @@ DELETE FROM organizations WHERE name = 'ארגון בדיקה';
 
 ---
 
-**התחל מיד. אל תשאל שאלות — כל המידע שאתה צריך נמצא כאן.**
+**התחל מדרישות מקדימות (P1-P4). רק אחרי שכולן עוברות — התחל את תכנית הבדיקות.**
