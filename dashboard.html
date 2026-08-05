@@ -215,34 +215,9 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
   </div>
 
 
-  <!-- Filters (multi-select) -->
-  <div class="filters">
-    <div class="filter-label">פלטפורמה:</div>
-    <button class="filter-chip active" data-filter="all" onclick="togglePlatformFilter(this)">הכל</button>
-    <button class="filter-chip" data-filter="facebook" onclick="togglePlatformFilter(this)">📘 פייסבוק</button>
-    <button class="filter-chip" data-filter="instagram" onclick="togglePlatformFilter(this)">📸 אינסטגרם</button>
-    <button class="filter-chip" data-filter="tiktok" onclick="togglePlatformFilter(this)">🎵 טיקטוק</button>
-    <button class="filter-chip" data-filter="twitter" onclick="togglePlatformFilter(this)">𝕏 טוויטר</button>
-    <button class="filter-chip" data-filter="linkedin" onclick="togglePlatformFilter(this)">💼 לינקדאין</button>
-    <button class="filter-chip" data-filter="spotify" onclick="togglePlatformFilter(this)">🎧 ספוטיפיי</button>
-    <button class="filter-chip" data-filter="youtube" onclick="togglePlatformFilter(this)">▶️ יוטיוב</button>
-    <button class="filter-chip" data-filter="email" onclick="togglePlatformFilter(this)">📧 ניוזלטר</button>
-    <button class="filter-chip" data-filter="newspaper" onclick="togglePlatformFilter(this)">📰 עיתון</button>
-    <button class="filter-chip" data-filter="website" onclick="togglePlatformFilter(this)">🌐 אתר</button>
-    <button class="filter-chip" data-filter="whatsapp" onclick="togglePlatformFilter(this)">💬 וואטסאפ</button>
-  </div>
-  <div class="filters" style="margin-top:-12px;gap:5px;flex-wrap:nowrap;overflow-x:auto">
-    <div class="filter-label">ארגון:</div>
-    <button class="org-chip active" data-org="all" onclick="toggleOrgFilter(this)">הכל</button>
-    <button class="org-chip" data-org="ויצו" onclick="toggleOrgFilter(this)">ויצו</button>
-    <button class="org-chip" data-org="נעמת" onclick="toggleOrgFilter(this)">נעמת</button>
-    <button class="org-chip" data-org="דלת פתוחה" onclick="toggleOrgFilter(this)">דלת פתוחה</button>
-    <button class="org-chip" data-org="לדעת לבחור נכון" onclick="toggleOrgFilter(this)">לדעת לבחור נכון</button>
-    <button class="org-chip" data-org="איגוד העובדים הסוציאליים" onclick="toggleOrgFilter(this)">איגוד העו״ס</button>
-    <button class="org-chip" data-org="לתת פה" onclick="toggleOrgFilter(this)">לתת פה</button>
-    <button class="org-chip" data-org="לא לאלימות" onclick="toggleOrgFilter(this)">לא לאלימות</button>
-    <button class="org-chip" data-org="קווים אדומים" onclick="toggleOrgFilter(this)">קווים אדומים</button>
-  </div>
+  <!-- Filters (multi-select) — generated dynamically from CONFIG -->
+  <div class="filters" id="platformFilters"></div>
+  <div class="filters" id="orgFilters" style="margin-top:-12px;gap:5px;flex-wrap:nowrap;overflow-x:auto"></div>
 
   <!-- Metrics -->
   <div class="metrics-row">
@@ -330,6 +305,20 @@ const PLATFORMS = CONFIG.PLATFORMS;
 // Build TYPES lookup from config
 const TYPES = {};
 PLATFORMS.forEach(p => { TYPES[p.id] = p.types; });
+
+// Build filter chips from config
+function buildFilterChips() {
+  const platContainer = document.getElementById('platformFilters');
+  platContainer.innerHTML = '<div class="filter-label">פלטפורמה:</div>' +
+    '<button class="filter-chip active" data-filter="all" onclick="togglePlatformFilter(this)">הכל</button>' +
+    PLATFORMS.map(p => `<button class="filter-chip" data-filter="${p.id}" onclick="togglePlatformFilter(this)">${p.icon} ${p.name}</button>`).join('');
+
+  const orgContainer = document.getElementById('orgFilters');
+  orgContainer.innerHTML = '<div class="filter-label">ארגון:</div>' +
+    '<button class="org-chip active" data-org="all" onclick="toggleOrgFilter(this)">הכל</button>' +
+    ORGS.map(o => `<button class="org-chip" data-org="${o}" onclick="toggleOrgFilter(this)">${o}</button>`).join('');
+}
+buildFilterChips();
 
 const FULL_NAMES = [
   'מיכל פרינס','נועה לוינסון','יובל אדלר','דנה שמעוני','אורי ברקוביץ','שירה נחמני',
@@ -641,8 +630,15 @@ function renderEngagementChart(d) {
     document.getElementById('engChartTitle').textContent = `אינטראקציות — ${plat.name}`;
     document.getElementById('engChartSub').textContent = `נתונים ספציפיים ל${plat.name}`;
   } else {
-    engKeys = ['likes', 'comments', 'shares', 'reach'];
-    engLabels = ['לייקים', 'תגובות', 'שיתופים', 'חשיפות'];
+    // Aggregate unique engagement metrics across all platforms
+    const engMap = new Map();
+    PLATFORMS.forEach(p => {
+      p.metrics.filter(m => m.isEngagement).forEach(m => {
+        if (!engMap.has(m.id)) engMap.set(m.id, m.label);
+      });
+    });
+    engKeys = [...engMap.keys()];
+    engLabels = [...engMap.values()];
     document.getElementById('engChartTitle').textContent = 'אינטראקציות לפי סוג';
     document.getElementById('engChartSub').textContent = selectedPlatforms.size > 1 ? `${selectedPlatforms.size} פלטפורמות נבחרו` : 'כל הפלטפורמות';
   }
