@@ -229,7 +229,6 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 
   <!-- Goals (admin only) -->
   <div class="goals-section" style="position:relative;display:none">
-    <button class="edit-btn" onclick="showToast('מצב עריכה: יעדים')">✏️</button>
     <div class="section-title">יעדים</div>
     <div id="goalsContainer"></div>
   </div>
@@ -270,7 +269,6 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 
   <!-- Link Archive -->
   <div class="leaderboard" id="linkArchive" style="position:relative">
-    <button class="edit-btn" onclick="showToast('מצב עריכה: ארכיון קישורים')">✏️</button>
     <div class="section-title">📎 ארכיון קישורים</div>
     <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">כל התכנים שהועלו — חפשו, סננו והעתיקו קישורים לשיתוף</div>
     <div class="link-search">
@@ -373,12 +371,7 @@ async function loadDashboardData() {
     .order('sort_order');
   if (goalsData) window._campaignGoals = goalsData;
 
-  // Build org filter chips from actual data
-  const actualOrgs = [...new Set(entries.map(e => e.person.org))];
-  const orgContainer = document.getElementById('orgFilters');
-  orgContainer.innerHTML = '<div class="filter-label">ארגון:</div>' +
-    '<button class="org-chip active" data-org="all" onclick="toggleOrgFilter(this)">הכל</button>' +
-    actualOrgs.map(o => `<button class="org-chip" data-org="${o}" onclick="toggleOrgFilter(this)">${o}</button>`).join('');
+  // Org filter chips stay as built by buildFilterChips() from CONFIG.ORGS
 
   renderAll();
 }
@@ -474,10 +467,25 @@ function renderMetrics() {
   animateValue('totalEng', totalEng);
   document.getElementById('totalContent').textContent = d.length.toLocaleString();
   document.getElementById('totalPeople').textContent = unique.size;
-  document.getElementById('changeReach').textContent = '↑ ' + Math.round(totalReach * 0.124).toLocaleString() + ' מאתמול';
-  document.getElementById('changeEng').textContent = '↑ ' + Math.round(totalEng * 0.087).toLocaleString() + ' מאתמול';
-  document.getElementById('changeContent').textContent = '↑ ' + rand(3, 8) + ' היום';
-  document.getElementById('changePeople').textContent = 'מתוך ' + people.length + ' רשומים';
+  document.getElementById('changeReach').textContent = '';
+  document.getElementById('changeEng').textContent = '';
+  document.getElementById('changeContent').textContent = '';
+  document.getElementById('changePeople').textContent = '';
+
+  // Empty state
+  let emptyBanner = document.getElementById('emptyStateBanner');
+  if (!emptyBanner) {
+    emptyBanner = document.createElement('div');
+    emptyBanner.id = 'emptyStateBanner';
+    emptyBanner.style.cssText = 'text-align:center;padding:32px 16px;font-size:16px;font-weight:500;color:var(--gray-500);background:var(--gray-100);border-radius:var(--radius);margin-bottom:20px;display:none';
+    document.querySelector('.metrics-grid').after(emptyBanner);
+  }
+  if (entries.length === 0) {
+    emptyBanner.textContent = 'אין נתונים להצגה';
+    emptyBanner.style.display = 'block';
+  } else {
+    emptyBanner.style.display = 'none';
+  }
 }
 
 function animateValue(id, target) {
@@ -891,11 +899,11 @@ function updateCampStatus(forceStatus) {
     document.querySelector('.main').prepend(banner);
   }
   if (campaignStatus === 'ended') {
-    banner.textContent = 'הקמפיין הסתיים — הנתונים מוצגים לצפייה בלבד';
+    banner.textContent = 'הקמפיין הסתיים — הנתונים מוצגים לצפייה בלבד. משתתפים לא יכולים להזין תוכן חדש.';
     banner.style.background = '#f5f5f5'; banner.style.color = '#888'; banner.style.display = 'block';
   } else if (campaignStatus === 'paused') {
-    banner.textContent = 'הקמפיין מושהה';
-    banner.style.background = '#fff8e1'; banner.style.color = '#f59e0b'; banner.style.display = 'block';
+    banner.textContent = 'הקמפיין מושהה — משתתפים לא יכולים להזין תוכן חדש כרגע.';
+    banner.style.background = '#fff8e1'; banner.style.color = '#92400e'; banner.style.display = 'block';
   } else {
     banner.style.display = 'none';
   }

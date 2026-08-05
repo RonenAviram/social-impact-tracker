@@ -329,6 +329,11 @@ async function init() {
     badge.style.borderColor = '#ccc';
     badge.style.color = '#888';
     badge.style.background = '#f5f5f5';
+  } else if (CAMPAIGN.status === 'paused') {
+    badge.textContent += ' (מושהה)';
+    badge.style.borderColor = '#f59e0b';
+    badge.style.color = '#92400e';
+    badge.style.background = '#fff8e1';
   }
   document.getElementById('uploadDate').value = today();
 
@@ -484,6 +489,24 @@ async function renderPersonalArea() {
   const list = document.getElementById('contentList');
   if (!currentUser) return;
 
+  // Show campaign status banner if not active
+  let statusBanner = document.getElementById('campaignStatusBanner');
+  if (!statusBanner) {
+    statusBanner = document.createElement('div');
+    statusBanner.id = 'campaignStatusBanner';
+    statusBanner.style.cssText = 'text-align:center;padding:10px;font-size:14px;font-weight:600;border-radius:var(--radius-sm);margin-bottom:12px;display:none';
+    list.parentNode.insertBefore(statusBanner, list);
+  }
+  if (CAMPAIGN.status === 'paused') {
+    statusBanner.textContent = 'הקמפיין מושהה — לא ניתן להעלות תוכן חדש כרגע';
+    statusBanner.style.background = '#fff8e1'; statusBanner.style.color = '#92400e'; statusBanner.style.display = 'block';
+  } else if (CAMPAIGN.status === 'ended') {
+    statusBanner.textContent = 'הקמפיין הסתיים — לא ניתן להעלות תוכן חדש';
+    statusBanner.style.background = '#f5f5f5'; statusBanner.style.color = '#888'; statusBanner.style.display = 'block';
+  } else {
+    statusBanner.style.display = 'none';
+  }
+
   list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400)">טוען...</div>';
 
   const db = CONFIG.db();
@@ -549,6 +572,10 @@ function formatDate(d) {
 function showUploadScreen() {
   if (CAMPAIGN.status === 'ended') {
     alert('הקמפיין הסתיים — לא ניתן להעלות תוכן חדש.');
+    return;
+  }
+  if (CAMPAIGN.status === 'paused') {
+    alert('הקמפיין מושהה — לא ניתן להעלות תוכן חדש כרגע.');
     return;
   }
   uploadSelectedPlatforms = [];
