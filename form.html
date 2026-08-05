@@ -293,37 +293,18 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// =================== DATA (from config.js) ===================
+// =================== DATA (from config.js + Supabase) ===================
 const PLATFORMS = CONFIG.PLATFORMS;
 
-// Simulated campaign data (will come from Supabase)
-const CAMPAIGN = {
-  name: 'מניעת אלימות בזוגיות צעירה',
-  dates: '22 ביוני – 28 ביוני 2026',
-  status: 'active' // 'active' | 'ended'
-};
-
-// Simulated pool (will come from Supabase via campaign)
-const POOL = [
-  {name:'מיכל פרינס', org:'קווים אדומים'},
-  {name:'דנה כהן', org:'ויצו'},
-  {name:'יעל לוי', org:'נעמת'},
-  {name:'רותם שמש', org:'דלת פתוחה'},
-  {name:'אורלי דוד', org:'לדעת לבחור נכון'},
-  {name:'נועה בן דוד', org:'איגוד העובדים הסוציאליים'},
-  {name:'שירה גולן', org:'לתת פה'},
-  {name:'מאיה ברק', org:'לא לאלימות'},
-  {name:'תמר רוזן', org:'קווים אדומים'},
-  {name:'ליאת כץ', org:'ויצו'}
-];
-
-// Simulated user content database
-let userContents = {};
+// Loaded from Supabase
+let CAMPAIGN = { name: '', status: 'active' };
+let POOL = []; // [{name, org, profile_id}]
 
 // Current state
-let currentUser = null;
+let currentUser = null; // {profileId, name, org}
 let editingContentId = null;
 let deletingContentId = null;
 let uploadSelectedPlatforms = [];
@@ -331,7 +312,16 @@ let uploadPlatformData = {};
 let currentPlatformIdx = 0;
 
 // =================== INIT ===================
-function init() {
+async function init() {
+  const db = CONFIG.db();
+  if (!db) { showToast('שגיאה בחיבור למסד הנתונים'); return; }
+
+  // Load campaign info
+  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  if (campData) {
+    CAMPAIGN = campData;
+  }
+
   const badge = document.getElementById('campaignName');
   badge.textContent = CAMPAIGN.name;
   if (CAMPAIGN.status === 'ended') {
@@ -341,6 +331,12 @@ function init() {
     badge.style.background = '#f5f5f5';
   }
   document.getElementById('uploadDate').value = today();
+
+  // Load pool from Supabase
+  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  if (poolData) {
+    POOL = poolData.map(p => ({ name: p.name, org: p.org_name, profileId: p.profile_id }));
+  }
 
   // Populate login dropdown — names only, org auto-fills
   const nameSelect = document.getElementById('loginName');
@@ -357,16 +353,21 @@ function init() {
     grid.appendChild(d);
   });
 
-  // Seed demo data for one user
-  seedDemoData();
-}
-
-function seedDemoData() {
-  const key = 'מיכל פרינס|קווים אדומים';
-  userContents[key] = [
-    { id: CONFIG.generateId(), platformId:'facebook', type:'פוסט', link:'https://facebook.com/post/12345', uploadDate:'2026-06-22', metrics:{likes:356,comments:114,shares:42,reach:1555}, lastUpdate:'2026-06-25' },
-    { id: CONFIG.generateId(), platformId:'instagram', type:'רילס', link:'https://instagram.com/reel/abc123', uploadDate:'2026-06-23', metrics:{likes:230,comments:45,saves:18,reach:2100,views:1400}, lastUpdate:'2026-06-24' }
-  ];
+  // Check if already logged in (localStorage session)
+  const session = CONFIG.getSession();
+  if (session && session.profileId) {
+    // Verify session is still valid (profile exists in pool)
+    const poolMatch = POOL.find(p => p.profileId === session.profileId);
+    if (poolMatch) {
+      currentUser = { profileId: session.profileId, name: session.name, org: session.orgName };
+      const initials = getInitials(currentUser.name);
+      ['userAvatar','uploadAvatar','updateAvatar'].forEach(id => document.getElementById(id).textContent = initials);
+      ['userName','uploadUserName','updateUserName'].forEach(id => document.getElementById(id).textContent = currentUser.name);
+      ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => document.getElementById(id).textContent = currentUser.org);
+      showScreen('screenPersonal');
+      return;
+    }
+  }
 }
 
 function today() { return new Date().toISOString().slice(0,10); }
@@ -390,9 +391,6 @@ function getInitials(name) {
   return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0,2);
 }
 
-function getUserKey() { return currentUser ? `${currentUser.name}|${currentUser.org}` : null; }
-function getUserContents() { return userContents[getUserKey()] || []; }
-
 // =================== NAVIGATION ===================
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -406,7 +404,7 @@ function onNameChange() {
   const name = document.getElementById('loginName').value;
   const orgSelect = document.getElementById('loginOrg');
 
-  // Find orgs for this person
+  // Find orgs for this person from pool
   const orgsForName = POOL.filter(p => p.name === name).map(p => p.org);
 
   // Clear and repopulate org dropdown
@@ -434,11 +432,26 @@ function checkLoginReady() {
   document.getElementById('btnLogin').disabled = !name || !org;
 }
 
-function doLogin() {
+async function doLogin() {
   const name = document.getElementById('loginName').value;
   const org = document.getElementById('loginOrg').value;
   if (!name || !org) return;
-  currentUser = { name, org };
+
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  btn.textContent = 'מתחבר...';
+
+  // Find profile in pool (already loaded)
+  const poolMatch = POOL.find(p => p.name === name && p.org === org);
+  if (!poolMatch) {
+    showToast('לא נמצא במאגר — פנה למנהל');
+    btn.disabled = false;
+    btn.textContent = 'כניסה';
+    return;
+  }
+
+  currentUser = { profileId: poolMatch.profileId, name, org };
+  CONFIG.setSession(poolMatch.profileId, name, org, 'member');
 
   // Update user bars across screens
   const initials = getInitials(name);
@@ -446,6 +459,7 @@ function doLogin() {
   ['userName','uploadUserName','updateUserName'].forEach(id => document.getElementById(id).textContent = name);
   ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => document.getElementById(id).textContent = org);
 
+  btn.textContent = 'כניסה';
   showScreen('screenPersonal');
 }
 
@@ -456,6 +470,7 @@ function doLogout() {
   uploadSelectedPlatforms = [];
   uploadPlatformData = {};
   currentPlatformIdx = 0;
+  CONFIG.clearSession();
   document.getElementById('loginName').value = '';
   const orgSelect = document.getElementById('loginOrg');
   orgSelect.innerHTML = '<option value="">בחירת ארגון...</option>';
@@ -465,11 +480,21 @@ function doLogout() {
 }
 
 // =================== PERSONAL AREA ===================
-function renderPersonalArea() {
+async function renderPersonalArea() {
   const list = document.getElementById('contentList');
-  const contents = getUserContents();
+  if (!currentUser) return;
 
-  if (contents.length === 0) {
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400)">טוען...</div>';
+
+  const db = CONFIG.db();
+  const { data: contents, error } = await db.rpc('get_user_contents', {
+    p_profile_id: currentUser.profileId,
+    p_campaign_id: CONFIG.CAMPAIGN_ID
+  });
+
+  if (error) { list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-400)">שגיאה בטעינה</div>'; return; }
+
+  if (!contents || contents.length === 0) {
     list.innerHTML = `<div class="empty-state">
       <span class="empty-icon">📋</span>
       <h3>עדיין לא העלית תכנים</h3>
@@ -479,31 +504,35 @@ function renderPersonalArea() {
     return;
   }
 
+  // Store for update/delete references
+  window._userContents = contents;
+
   let html = '';
   contents.forEach(c => {
-    const plat = PLATFORMS.find(p => p.id === c.platformId);
+    const plat = PLATFORMS.find(p => p.id === c.platform_id);
     if (!plat) return;
-    const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.type));
+    const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.content_type));
+    const metrics = c.latest_metrics || {};
 
     const safeLink = sanitizeLink(c.link);
-    const displayLink = escapeHtml(c.link);
+    const displayLink = escapeHtml(c.link || '');
     html += `<div class="content-card">
       <div class="cc-top">
         <span class="cc-icon">${plat.icon}</span>
         <span class="cc-title">${plat.name}</span>
-        <span class="cc-type">${c.type}</span>
+        <span class="cc-type">${c.content_type}</span>
       </div>
-      ${safeLink ? `<a href="${escapeHtml(safeLink)}" class="cc-link" target="_blank" rel="noopener">${displayLink}</a>` : `<span class="cc-link">${displayLink}</span>`}
-      <div class="cc-dates">הועלה: ${formatDate(c.uploadDate)}${c.lastUpdate ? ' · עודכן: ' + formatDate(c.lastUpdate) : ''}</div>
+      ${safeLink ? `<a href="${escapeHtml(safeLink)}" class="cc-link" target="_blank" rel="noopener">${displayLink}</a>` : (c.link ? `<span class="cc-link">${displayLink}</span>` : '')}
+      <div class="cc-dates">הועלה: ${formatDate(c.upload_date)}${c.latest_snapshot_date ? ' · עודכן: ' + formatDate(c.latest_snapshot_date) : ''}</div>
       <div class="cc-metrics">`;
     filteredMetrics.forEach(m => {
-      const val = c.metrics[m.id] || 0;
+      const val = metrics[m.id] || 0;
       html += `<div class="cc-metric"><div class="val">${val.toLocaleString()}</div><div class="lbl">${m.label}</div></div>`;
     });
     html += `</div>
       <div class="cc-actions">
-        <button class="btn btn-primary" onclick="showUpdateScreen('${c.id}')">עדכן נתונים</button>
-        <button class="btn btn-danger" onclick="showDeleteConfirm('${c.id}')">מחק</button>
+        <button class="btn btn-primary" onclick="showUpdateScreen('${c.entry_id}')">עדכן נתונים</button>
+        <button class="btn btn-danger" onclick="showDeleteConfirm('${c.entry_id}')">מחק</button>
       </div>
     </div>`;
   });
@@ -653,63 +682,80 @@ function backFromUpload() {
   }
 }
 
-function saveAllUploads() {
-  const key = getUserKey();
-  if (!userContents[key]) userContents[key] = [];
+async function saveAllUploads() {
+  if (!currentUser) return;
+  const db = CONFIG.db();
+  const btn = document.getElementById('btnNextPlatform');
+  btn.disabled = true;
+  btn.textContent = 'שומר...';
 
   const names = [];
-  uploadSelectedPlatforms.forEach(plat => {
+  let errors = 0;
+
+  for (const plat of uploadSelectedPlatforms) {
     const data = uploadPlatformData[plat.id];
-    if (!data.link || !data.date) return;
+    if (!data.link || !data.date) continue;
     data.link = sanitizeLink(data.link);
-    if (!data.link) return; // blocked unsafe link
+    if (!data.link) continue;
 
     const metrics = {};
     const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type));
     filteredMetrics.forEach(m => { metrics[m.id] = 0; });
 
-    userContents[key].push({
-      id: CONFIG.generateId(),
-      platformId: plat.id,
-      type: data.type,
-      link: data.link,
-      uploadDate: data.date,
-      metrics,
-      lastUpdate: null
+    const { error } = await db.rpc('add_content_entry', {
+      p_profile_id: currentUser.profileId,
+      p_campaign_id: CONFIG.CAMPAIGN_ID,
+      p_platform_id: plat.id,
+      p_content_type: data.type,
+      p_link: data.link,
+      p_upload_date: data.date,
+      p_initial_metrics: metrics
     });
-    names.push(`${plat.icon} ${plat.name}`);
-  });
 
-  document.getElementById('successTitle').textContent = uploadSelectedPlatforms.length > 1 ? `${uploadSelectedPlatforms.length} תכנים נוספו בהצלחה!` : 'התוכן נוסף בהצלחה!';
+    if (error) { errors++; console.error('Upload error:', error); }
+    else { names.push(`${plat.icon} ${plat.name}`); }
+  }
+
+  btn.textContent = uploadSelectedPlatforms.length > 1 ? 'שמור הכל' : 'שמור';
+  btn.disabled = false;
+
+  if (errors > 0 && names.length === 0) {
+    showToast('שגיאה בשמירה — נסה שוב');
+    return;
+  }
+
+  document.getElementById('successTitle').textContent = names.length > 1 ? `${names.length} תכנים נוספו בהצלחה!` : 'התוכן נוסף בהצלחה!';
   document.getElementById('successMsg').textContent = names.join(' · ');
   showScreen('screenSuccess');
-  showToast(uploadSelectedPlatforms.length > 1 ? `${uploadSelectedPlatforms.length} תכנים נוספו` : 'התוכן נוסף');
+  showToast(names.length > 1 ? `${names.length} תכנים נוספו` : 'התוכן נוסף');
 }
 
 // =================== UPDATE ===================
 function showUpdateScreen(contentId) {
   editingContentId = contentId;
-  const contents = getUserContents();
-  const c = contents.find(x => x.id === contentId);
+  const contents = window._userContents || [];
+  const c = contents.find(x => x.entry_id === contentId);
   if (!c) return;
 
-  const plat = PLATFORMS.find(p => p.id === c.platformId);
+  const plat = PLATFORMS.find(p => p.id === c.platform_id);
   if (!plat) return;
+
+  const metrics = c.latest_metrics || {};
 
   // Header
   document.getElementById('updateHeader').innerHTML = `
     <span class="update-icon">${plat.icon}</span>
     <div class="update-info">
-      <h3>${plat.name} · ${c.type}</h3>
-      <p>הועלה: ${formatDate(c.uploadDate)}</p>
+      <h3>${plat.name} · ${c.content_type}</h3>
+      <p>הועלה: ${formatDate(c.upload_date)}</p>
     </div>`;
 
   // Metrics fields
   const grid = document.getElementById('updateMetrics');
-  const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.type));
+  const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.content_type));
   grid.innerHTML = '';
   filteredMetrics.forEach(m => {
-    const val = c.metrics[m.id] || 0;
+    const val = metrics[m.id] || 0;
     grid.innerHTML += `<div class="metric-field">
       <label>${m.label} <span class="req">*</span></label>
       <input type="number" inputmode="numeric" data-metric="${m.id}" value="${val}" min="0" required>
@@ -722,12 +768,9 @@ function showUpdateScreen(contentId) {
   showScreen('screenUpdate');
 }
 
-function saveUpdate() {
-  const key = getUserKey();
-  const contents = userContents[key];
-  if (!contents || !editingContentId) return;
+async function saveUpdate() {
+  if (!editingContentId || !currentUser) return;
 
-  const c = contents.find(x => x.id === editingContentId);
   const metricInputs = document.querySelectorAll('#updateMetrics input[data-metric]');
 
   // Validate all filled
@@ -737,11 +780,32 @@ function saveUpdate() {
   });
   if (!allFilled) { showToast('נא למלא את כל השדות'); return; }
 
-  // Save
+  // Build metrics object
+  const metrics = {};
   metricInputs.forEach(inp => {
-    c.metrics[inp.dataset.metric] = parseInt(inp.value) || 0;
+    metrics[inp.dataset.metric] = parseInt(inp.value) || 0;
   });
-  c.lastUpdate = document.getElementById('updateDate').value;
+
+  const btn = document.getElementById('btnSaveUpdate');
+  btn.disabled = true;
+  btn.textContent = 'שומר...';
+
+  const db = CONFIG.db();
+  const { error } = await db.rpc('update_metrics', {
+    p_content_entry_id: editingContentId,
+    p_profile_id: currentUser.profileId,
+    p_snapshot_date: document.getElementById('updateDate').value,
+    p_metrics: metrics
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'שמור עדכון';
+
+  if (error) {
+    showToast('שגיאה בשמירה — נסה שוב');
+    console.error('Update error:', error);
+    return;
+  }
 
   document.getElementById('successTitle').textContent = 'הנתונים עודכנו בהצלחה!';
   document.getElementById('successMsg').textContent = 'הנתונים החדשים ישתקפו בדשבורד.';
@@ -752,11 +816,11 @@ function saveUpdate() {
 // =================== DELETE ===================
 function showDeleteConfirm(contentId) {
   deletingContentId = contentId;
-  const contents = getUserContents();
-  const c = contents.find(x => x.id === contentId);
+  const contents = window._userContents || [];
+  const c = contents.find(x => x.entry_id === contentId);
   if (!c) return;
-  const plat = PLATFORMS.find(p => p.id === c.platformId);
-  document.getElementById('confirmMsg').textContent = `בטוח שברצונך למחוק את ה${c.type} ב${plat.name}?`;
+  const plat = PLATFORMS.find(p => p.id === c.platform_id);
+  document.getElementById('confirmMsg').textContent = `בטוח שברצונך למחוק את ה${c.content_type} ב${plat.name}?`;
   document.getElementById('confirmOverlay').classList.add('show');
 }
 
@@ -765,11 +829,23 @@ function hideConfirm() {
   deletingContentId = null;
 }
 
-function confirmDelete() {
-  if (!deletingContentId) return;
-  const key = getUserKey();
-  userContents[key] = userContents[key].filter(x => x.id !== deletingContentId);
+async function confirmDelete() {
+  if (!deletingContentId || !currentUser) return;
+
+  const db = CONFIG.db();
+  const { error } = await db.rpc('delete_content_entry', {
+    p_entry_id: deletingContentId,
+    p_profile_id: currentUser.profileId
+  });
+
   hideConfirm();
+
+  if (error) {
+    showToast('שגיאה במחיקה');
+    console.error('Delete error:', error);
+    return;
+  }
+
   renderPersonalArea();
   showToast('התוכן נמחק');
 }

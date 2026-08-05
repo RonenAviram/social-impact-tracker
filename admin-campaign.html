@@ -350,24 +350,46 @@ textarea{resize:vertical;min-height:60px}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// === DATA ===
-const DEFAULT_ORGS = CONFIG.ORGS;
+// === DATA (loaded from Supabase) ===
+let orgs = [];           // [{id, name}]
+let participants = [];   // [{profile_id, name, org, org_id}]
+let poolProfiles = [];   // all active profiles from DB
 
-let orgs = [...DEFAULT_ORGS];
-let participants = [
-  {name:'שרה כהן', org:'ויצו'},
-  {name:'דנה לוי', org:'נעמת'},
-  {name:'רונית אברהם', org:'דלת פתוחה'},
-  {name:'יעל מזרחי', org:'לדעת לבחור נכון'},
-  {name:'מיכל רוזן', org:'איגוד העובדים הסוציאליים'},
-  {name:'נועה שמיר', org:'לתת פה'},
-  {name:'תמר גולן', org:'לא לאלימות'},
-  {name:'אורלי ברק', org:'קווים אדומים'},
-  {name:'עדי פרידמן', org:'ויצו'},
-  {name:'ליאת חן', org:'נעמת'},
-];
+// === INIT ===
+async function init() {
+  const db = CONFIG.db();
+  if (!db) { showToast('שגיאה: Supabase לא מוגדר'); return; }
+
+  try {
+    // Load orgs
+    const { data: orgRows, error: oErr } = await db.from('organizations').select('id, name').order('name');
+    if (oErr) throw oErr;
+    orgs = orgRows || [];
+
+    // Load all active profiles (pool)
+    const { data: profiles, error: pErr } = await db.rpc('get_all_profiles');
+    if (pErr) throw pErr;
+    poolProfiles = (profiles || []).filter(p => p.is_active).map(p => ({
+      profile_id: p.profile_id,
+      name: p.name,
+      org: p.org_name,
+      org_id: p.org_id
+    }));
+
+    // Pre-populate participants with pool
+    participants = [...poolProfiles];
+
+    renderOrgs();
+    renderParticipants();
+    renderGoals();
+  } catch (e) {
+    console.error('Init error:', e);
+    showToast('שגיאה בטעינת נתונים');
+  }
+}
 
 // === NAVIGATION ===
 function goStep(n) {
@@ -392,33 +414,43 @@ function goStep(n) {
 // === ORGS ===
 function renderOrgs() {
   const container = document.getElementById('orgTags');
-  container.innerHTML = orgs.map((o, i) => `
-    <span class="org-tag">${o}<button class="remove-tag" onclick="removeOrg(${i})" title="הסרה">×</button></span>
+  container.innerHTML = orgs.map(o => `
+    <span class="org-tag">${o.name}<button class="remove-tag" onclick="removeOrg('${o.id}')" title="הסרה">×</button></span>
   `).join('');
   updateOrgSelect();
 }
 
-function addOrg() {
+async function addOrg() {
   const input = document.getElementById('newOrg');
   const name = input.value.trim();
-  if (!name || orgs.includes(name)) return;
-  orgs.push(name);
-  input.value = '';
-  renderOrgs();
-  showToast('הארגון "' + name + '" נוסף');
+  if (!name || orgs.some(o => o.name === name)) return;
+
+  try {
+    const db = CONFIG.db();
+    const { data, error } = await db.from('organizations').insert({ name }).select('id, name').single();
+    if (error) throw error;
+    orgs.push(data);
+    input.value = '';
+    renderOrgs();
+    showToast('הארגון "' + name + '" נוסף');
+  } catch (e) {
+    console.error('Add org error:', e);
+    showToast('שגיאה בהוספת ארגון');
+  }
 }
 
-function removeOrg(idx) {
-  const removed = orgs.splice(idx, 1)[0];
-  participants = participants.filter(p => p.org !== removed);
+function removeOrg(orgId) {
+  const removed = orgs.find(o => o.id === orgId);
+  orgs = orgs.filter(o => o.id !== orgId);
+  participants = participants.filter(p => p.org_id !== orgId);
   renderOrgs();
   renderParticipants();
-  showToast('הארגון "' + removed + '" הוסר');
+  showToast('הארגון "' + (removed ? removed.name : '') + '" הוסר מהקמפיין');
 }
 
 function updateOrgSelect() {
   const sel = document.getElementById('newOrgSelect');
-  sel.innerHTML = '<option value="">בחר ארגון...</option>' + orgs.map(o => `<option value="${o}">${o}</option>`).join('');
+  sel.innerHTML = '<option value="">בחר ארגון...</option>' + orgs.map(o => `<option value="${o.id}" data-orgname="${o.name}">${o.name}</option>`).join('');
 }
 
 // === PARTICIPANTS ===
@@ -437,12 +469,25 @@ function addParticipant() {
   const nameInput = document.getElementById('newName');
   const orgSelect = document.getElementById('newOrgSelect');
   const name = nameInput.value.trim();
-  const org = orgSelect.value;
-  if (!name || !org) {
+  const orgId = orgSelect.value;
+  if (!name || !orgId) {
     showToast('יש להזין שם ולבחור ארגון');
     return;
   }
-  participants.push({name, org});
+  const orgObj = orgs.find(o => o.id === orgId);
+
+  // Check if this person exists in pool
+  let profile = poolProfiles.find(p => p.name === name && p.org_id === orgId);
+  if (!profile) {
+    // New person — will be created during launch
+    profile = { profile_id: null, name, org: orgObj.name, org_id: orgId };
+  }
+
+  if (participants.some(p => p.name === name && p.org_id === orgId)) {
+    showToast('אדם זה כבר ברשימה'); return;
+  }
+
+  participants.push(profile);
   nameInput.value = '';
   orgSelect.selectedIndex = 0;
   renderParticipants();
@@ -457,25 +502,16 @@ function removeParticipant(idx) {
 
 // === IMPORT FROM POOL ===
 function importFromPool() {
-  // In production this would fetch from the DB pool table
-  // For the mockup, simulate importing all pool members
-  const poolData = [
-    {name:'שרה כהן', org:'ויצו'},{name:'עדי פרידמן', org:'ויצו'},
-    {name:'דנה לוי', org:'נעמת'},{name:'ליאת חן', org:'נעמת'},
-    {name:'רונית אברהם', org:'דלת פתוחה'},{name:'הדס כרמל', org:'דלת פתוחה'},
-    {name:'יעל מזרחי', org:'לדעת לבחור נכון'},
-    {name:'מיכל רוזן', org:'איגוד העובדים הסוציאליים'},
-    {name:'נועה שמיר', org:'לתת פה'},
-    {name:'תמר גולן', org:'לא לאלימות'},
-    {name:'אורלי ברק', org:'קווים אדומים'},{name:'רותם דור', org:'קווים אדומים'},
-  ];
   let added = 0;
-  poolData.forEach(p => {
-    if (!participants.some(x => x.name === p.name && x.org === p.org)) {
-      participants.push(p);
+  poolProfiles.forEach(p => {
+    if (!participants.some(x => x.profile_id === p.profile_id)) {
+      participants.push({...p});
       added++;
     }
-    if (!orgs.includes(p.org)) orgs.push(p.org);
+    // Ensure org is in the list
+    if (!orgs.some(o => o.id === p.org_id)) {
+      orgs.push({ id: p.org_id, name: p.org });
+    }
   });
   renderOrgs();
   renderParticipants();
@@ -552,17 +588,79 @@ function formatDate(d) {
 }
 
 // === LAUNCH ===
-function launchCampaign() {
-  const name = document.getElementById('campName').value || 'קמפיין';
-  document.getElementById('successMsg').textContent = 'הקמפיין "' + name + '" פעיל ומוכן לקבלת נתונים.';
+async function launchCampaign() {
+  const campName = document.getElementById('campName').value || 'קמפיין';
+  const startDate = document.getElementById('campStart').value;
+  const endDate = document.getElementById('campEnd').value;
+  const isVisible = document.getElementById('campVisible').checked;
 
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('secSuccess').classList.add('active');
+  if (!startDate || !endDate) { showToast('יש לבחור תאריכי התחלה וסיום'); return; }
 
-  document.querySelectorAll('.step-indicator').forEach(si => {
-    si.classList.remove('active');
-    si.classList.add('done');
-  });
+  try {
+    const db = CONFIG.db();
+
+    // 1. Create campaign
+    const { data: camp, error: campErr } = await db.from('campaigns')
+      .insert({
+        name: campName,
+        description: document.getElementById('campDesc') ? document.getElementById('campDesc').value : '',
+        start_date: startDate,
+        end_date: endDate,
+        status: isVisible ? 'active' : 'paused',
+        admin_password_hash: null // Will inherit from existing or be set later
+      })
+      .select('id').single();
+    if (campErr) throw campErr;
+
+    const campaignId = camp.id;
+
+    // 2. Create profiles for new participants (those without profile_id)
+    for (const p of participants) {
+      if (!p.profile_id) {
+        const { data: newProfile, error: pErr } = await db.from('profiles')
+          .insert({ name: p.name, org_id: p.org_id, role: 'member' })
+          .select('id').single();
+        if (pErr) { console.warn('Skip new profile:', p.name, pErr.message); continue; }
+        p.profile_id = newProfile.id;
+      }
+    }
+
+    // 3. Add participants
+    const cpRows = participants
+      .filter(p => p.profile_id)
+      .map(p => ({ campaign_id: campaignId, profile_id: p.profile_id }));
+    if (cpRows.length > 0) {
+      const { error: cpErr } = await db.from('campaign_participants').insert(cpRows);
+      if (cpErr) throw cpErr;
+    }
+
+    // 4. Add goals
+    const activeGoals = goals.filter(g => g.name && g.value);
+    if (activeGoals.length > 0) {
+      const goalRows = activeGoals.map((g, i) => ({
+        campaign_id: campaignId,
+        name: g.name,
+        target_value: Number(g.value),
+        sort_order: i + 1
+      }));
+      const { error: gErr } = await db.from('campaign_goals').insert(goalRows);
+      if (gErr) throw gErr;
+    }
+
+    // 5. Show success
+    document.getElementById('successMsg').textContent = 'הקמפיין "' + campName + '" פעיל ומוכן לקבלת נתונים.';
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('secSuccess').classList.add('active');
+    document.querySelectorAll('.step-indicator').forEach(si => {
+      si.classList.remove('active');
+      si.classList.add('done');
+    });
+
+    console.log('Campaign created:', campaignId);
+  } catch (e) {
+    console.error('Launch error:', e);
+    showToast('שגיאה ביצירת הקמפיין');
+  }
 }
 
 function copyFormLink() {
@@ -582,10 +680,8 @@ function showToast(msg) {
 document.getElementById('newOrg').addEventListener('keydown', e => { if (e.key === 'Enter') addOrg(); });
 document.getElementById('newName').addEventListener('keydown', e => { if (e.key === 'Enter') addParticipant(); });
 
-// === INIT ===
-renderOrgs();
-renderParticipants();
-renderGoals();
+// === START ===
+init();
 </script>
 </body>
 </html>

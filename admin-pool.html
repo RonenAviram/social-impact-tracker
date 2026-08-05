@@ -262,28 +262,55 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// === DATA ===
-const DEFAULT_ORGS = CONFIG.ORGS;
-
-let pool = [
-  {name:'שרה כהן', org:'ויצו', campaigns:1},
-  {name:'עדי פרידמן', org:'ויצו', campaigns:1},
-  {name:'דנה לוי', org:'נעמת', campaigns:1},
-  {name:'ליאת חן', org:'נעמת', campaigns:0},
-  {name:'רונית אברהם', org:'דלת פתוחה', campaigns:1},
-  {name:'יעל מזרחי', org:'לדעת לבחור נכון', campaigns:1},
-  {name:'מיכל רוזן', org:'איגוד העובדים הסוציאליים', campaigns:1},
-  {name:'נועה שמיר', org:'לתת פה', campaigns:0},
-  {name:'תמר גולן', org:'לא לאלימות', campaigns:1},
-  {name:'אורלי ברק', org:'קווים אדומים', campaigns:1},
-  {name:'רותם דור', org:'קווים אדומים', campaigns:0},
-  {name:'הדס כרמל', org:'דלת פתוחה', campaigns:0},
-];
-
-let orgs = [...DEFAULT_ORGS];
+// === DATA (loaded from Supabase) ===
+let pool = [];    // [{profile_id, name, org, org_id, campaigns}]
+let orgs = [];    // [{id, name}]
 let pendingImport = [];
+
+// === INIT ===
+async function init() {
+  const db = CONFIG.db();
+  if (!db) { showToast('שגיאה: Supabase לא מוגדר'); return; }
+
+  try {
+    // Load all profiles with org names
+    const { data: profiles, error: pErr } = await db.rpc('get_all_profiles');
+    if (pErr) throw pErr;
+
+    // Count campaigns per profile
+    const { data: cpRows } = await db.from('campaign_participants').select('profile_id');
+    const cpCount = {};
+    (cpRows || []).forEach(r => { cpCount[r.profile_id] = (cpCount[r.profile_id] || 0) + 1; });
+
+    pool = (profiles || []).map(p => ({
+      profile_id: p.profile_id,
+      name: p.name,
+      org: p.org_name,
+      org_id: p.org_id,
+      role: p.role,
+      is_active: p.is_active,
+      campaigns: cpCount[p.profile_id] || 0
+    }));
+
+    // Load orgs
+    const { data: orgRows, error: oErr } = await db.from('organizations').select('id, name').order('name');
+    if (oErr) throw oErr;
+    orgs = orgRows || [];
+
+    // Count campaigns for stats
+    const { count: campCount } = await db.from('campaigns').select('id', { count: 'exact', head: true });
+    document.getElementById('statCampaigns').textContent = campCount || 0;
+
+    renderPeople();
+    renderOrgs();
+  } catch (e) {
+    console.error('Init error:', e);
+    showToast('שגיאה בטעינת נתונים');
+  }
+}
 
 // === TABS ===
 function switchTab(tab) {
@@ -296,7 +323,8 @@ function switchTab(tab) {
 // === PEOPLE ===
 function renderPeople() {
   const search = (document.getElementById('searchPeople').value || '').trim().toLowerCase();
-  const filtered = pool.filter(p => {
+  const activePool = pool.filter(p => p.is_active !== false);
+  const filtered = activePool.filter(p => {
     if (!search) return true;
     return p.name.toLowerCase().includes(search) || p.org.toLowerCase().includes(search);
   });
@@ -305,72 +333,126 @@ function renderPeople() {
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><span class="empty-icon">🔍</span><p>לא נמצאו תוצאות</p></div></td></tr>`;
   } else {
-    tbody.innerHTML = filtered.map((p, i) => {
-      const realIdx = pool.indexOf(p);
-      return `<tr>
+    tbody.innerHTML = filtered.map(p => `<tr>
         <td class="name-cell">${p.name}</td>
         <td><span class="org-badge">${p.org}</span></td>
         <td style="font-size:12px;color:var(--gray-400)">${p.campaigns > 0 ? p.campaigns + ' קמפיינים' : 'טרם השתתף/ה'}</td>
         <td><div class="action-btns">
-          <button class="action-btn delete" onclick="removePerson(${realIdx})" title="הסרה">🗑</button>
+          <button class="action-btn delete" onclick="removePerson('${p.profile_id}')" title="הסרה">🗑</button>
         </div></td>
-      </tr>`;
-    }).join('');
+      </tr>`).join('');
   }
   updateStats();
   updateOrgSelect();
 }
 
-function addPerson() {
+async function addPerson() {
   const nameInput = document.getElementById('newPersonName');
   const orgSelect = document.getElementById('newPersonOrg');
   const name = nameInput.value.trim();
-  const org = orgSelect.value;
-  if (!name || !org) { showToast('יש להזין שם ולבחור ארגון'); return; }
-  if (pool.some(p => p.name === name && p.org === org)) { showToast('אדם זה כבר קיים במאגר'); return; }
-  pool.push({name, org, campaigns: 0});
-  nameInput.value = '';
-  orgSelect.selectedIndex = 0;
-  renderPeople();
-  showToast(name + ' נוסף/ה למאגר');
+  const orgId = orgSelect.value;
+  if (!name || !orgId) { showToast('יש להזין שם ולבחור ארגון'); return; }
+
+  const orgObj = orgs.find(o => o.id === orgId);
+  if (pool.some(p => p.name === name && p.org_id === orgId && p.is_active !== false)) {
+    showToast('אדם זה כבר קיים במאגר'); return;
+  }
+
+  try {
+    const db = CONFIG.db();
+    const { data, error } = await db.from('profiles')
+      .insert({ name, org_id: orgId, role: 'member' })
+      .select('id').single();
+    if (error) throw error;
+
+    pool.push({ profile_id: data.id, name, org: orgObj.name, org_id: orgId, role: 'member', is_active: true, campaigns: 0 });
+    nameInput.value = '';
+    orgSelect.selectedIndex = 0;
+    renderPeople();
+    showToast(name + ' נוסף/ה למאגר');
+  } catch (e) {
+    console.error('Add person error:', e);
+    showToast('שגיאה בהוספה');
+  }
 }
 
-function removePerson(idx) {
-  const removed = pool.splice(idx, 1)[0];
-  renderPeople();
-  showToast(removed.name + ' הוסר/ה מהמאגר');
+async function removePerson(profileId) {
+  try {
+    const db = CONFIG.db();
+    // Soft-delete: mark as inactive (can't hard-delete if has content_entries)
+    const { error } = await db.from('profiles').update({ is_active: false }).eq('id', profileId);
+    if (error) throw error;
+
+    const p = pool.find(x => x.profile_id === profileId);
+    if (p) p.is_active = false;
+    renderPeople();
+    showToast((p ? p.name : '') + ' הוסר/ה מהמאגר');
+  } catch (e) {
+    console.error('Remove person error:', e);
+    showToast('שגיאה בהסרה');
+  }
 }
 
 function updateOrgSelect() {
   const sel = document.getElementById('newPersonOrg');
-  sel.innerHTML = '<option value="">בחר ארגון...</option>' + orgs.map(o => `<option value="${o}">${o}</option>`).join('');
+  sel.innerHTML = '<option value="">בחר ארגון...</option>' + orgs.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
 }
 
 // === ORGS ===
 function renderOrgs() {
   const container = document.getElementById('orgTagsDisplay');
-  container.innerHTML = orgs.map((o, i) => {
-    const count = pool.filter(p => p.org === o).length;
-    return `<span class="org-tag">${o} <span class="count">${count}</span><button class="remove-tag" onclick="removeOrg(${i})" title="הסרה">×</button></span>`;
+  const activePool = pool.filter(p => p.is_active !== false);
+  container.innerHTML = orgs.map(o => {
+    const count = activePool.filter(p => p.org_id === o.id).length;
+    return `<span class="org-tag">${o.name} <span class="count">${count}</span><button class="remove-tag" onclick="removeOrg('${o.id}')" title="הסרה">×</button></span>`;
   }).join('');
 }
 
-function addOrg() {
+async function addOrg() {
   const input = document.getElementById('newOrgName');
   const name = input.value.trim();
-  if (!name || orgs.includes(name)) { showToast(name ? 'ארגון זה כבר קיים' : 'יש להזין שם'); return; }
-  orgs.push(name);
-  input.value = '';
-  renderOrgs();
-  updateOrgSelect();
-  showToast('הארגון "' + name + '" נוסף');
+  if (!name) { showToast('יש להזין שם'); return; }
+  if (orgs.some(o => o.name === name)) { showToast('ארגון זה כבר קיים'); return; }
+
+  try {
+    const db = CONFIG.db();
+    const { data, error } = await db.from('organizations').insert({ name }).select('id, name').single();
+    if (error) throw error;
+
+    orgs.push(data);
+    input.value = '';
+    renderOrgs();
+    updateOrgSelect();
+    showToast('הארגון "' + name + '" נוסף');
+  } catch (e) {
+    console.error('Add org error:', e);
+    showToast('שגיאה בהוספת ארגון');
+  }
 }
 
-function removeOrg(idx) {
-  const removed = orgs.splice(idx, 1)[0];
-  renderOrgs();
-  updateOrgSelect();
-  showToast('הארגון "' + removed + '" הוסר');
+async function removeOrg(orgId) {
+  const orgObj = orgs.find(o => o.id === orgId);
+  // Check if any active profiles belong to this org
+  const activeInOrg = pool.filter(p => p.org_id === orgId && p.is_active !== false);
+  if (activeInOrg.length > 0) {
+    showToast('לא ניתן להסיר ארגון עם אנשים פעילים (' + activeInOrg.length + ')');
+    return;
+  }
+
+  try {
+    const db = CONFIG.db();
+    const { error } = await db.from('organizations').delete().eq('id', orgId);
+    if (error) throw error;
+
+    orgs = orgs.filter(o => o.id !== orgId);
+    renderOrgs();
+    updateOrgSelect();
+    showToast('הארגון "' + (orgObj ? orgObj.name : '') + '" הוסר');
+  } catch (e) {
+    console.error('Remove org error:', e);
+    if (e.code === '23503') showToast('לא ניתן להסיר — יש אנשים משויכים');
+    else showToast('שגיאה בהסרת ארגון');
+  }
 }
 
 // === CSV ===
@@ -393,20 +475,19 @@ function processCSV(file) {
   const reader = new FileReader();
   reader.onload = function(e) {
     const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
-    // Skip header if it looks like one
     let start = 0;
     if (lines[0] && (lines[0].includes('שם') || lines[0].toLowerCase().includes('name'))) start = 1;
 
     pendingImport = [];
+    const activePool = pool.filter(p => p.is_active !== false);
     for (let i = start; i < lines.length; i++) {
       const parts = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
       if (parts.length >= 2 && parts[0] && parts[1]) {
-        const exists = pool.some(p => p.name === parts[0] && p.org === parts[1]);
+        const exists = activePool.some(p => p.name === parts[0] && p.org === parts[1]);
         pendingImport.push({name: parts[0], org: parts[1], exists});
       }
     }
 
-    // Show preview
     const newCount = pendingImport.filter(p => !p.exists).length;
     const existCount = pendingImport.filter(p => p.exists).length;
     document.getElementById('previewStats').innerHTML = `
@@ -428,16 +509,49 @@ function processCSV(file) {
   reader.readAsText(file);
 }
 
-function confirmImport() {
+async function confirmImport() {
   const newItems = pendingImport.filter(p => !p.exists);
-  newItems.forEach(p => {
-    pool.push({name: p.name, org: p.org, campaigns: 0});
-    if (!orgs.includes(p.org)) orgs.push(p.org);
-  });
-  cancelImport();
-  renderPeople();
-  renderOrgs();
-  showToast(newItems.length + ' אנשים יובאו למאגר');
+  if (newItems.length === 0) { cancelImport(); showToast('אין אנשים חדשים לייבוא'); return; }
+
+  try {
+    const db = CONFIG.db();
+
+    // Ensure all orgs exist
+    const uniqueOrgs = [...new Set(newItems.map(p => p.org))];
+    for (const orgName of uniqueOrgs) {
+      if (!orgs.some(o => o.name === orgName)) {
+        const { data, error } = await db.from('organizations').insert({ name: orgName }).select('id, name').single();
+        if (error && error.code !== '23505') throw error; // 23505 = unique violation (already exists)
+        if (data) orgs.push(data);
+        else {
+          // Already existed, fetch it
+          const { data: existing } = await db.from('organizations').select('id, name').eq('name', orgName).single();
+          if (existing && !orgs.some(o => o.id === existing.id)) orgs.push(existing);
+        }
+      }
+    }
+
+    // Insert profiles
+    let added = 0;
+    for (const item of newItems) {
+      const orgObj = orgs.find(o => o.name === item.org);
+      if (!orgObj) continue;
+      const { data, error } = await db.from('profiles')
+        .insert({ name: item.name, org_id: orgObj.id, role: 'member' })
+        .select('id').single();
+      if (error) { console.warn('Skip:', item.name, error.message); continue; }
+      pool.push({ profile_id: data.id, name: item.name, org: item.org, org_id: orgObj.id, role: 'member', is_active: true, campaigns: 0 });
+      added++;
+    }
+
+    cancelImport();
+    renderPeople();
+    renderOrgs();
+    showToast(added + ' אנשים יובאו למאגר');
+  } catch (e) {
+    console.error('Import error:', e);
+    showToast('שגיאה בייבוא');
+  }
 }
 
 function cancelImport() {
@@ -457,8 +571,9 @@ function downloadTemplate() {
 }
 
 function exportPool() {
+  const activePool = pool.filter(p => p.is_active !== false);
   let csv = 'שם,ארגון,קמפיינים\n';
-  pool.forEach(p => csv += `${p.name},${p.org},${p.campaigns}\n`);
+  activePool.forEach(p => csv += `${p.name},${p.org},${p.campaigns}\n`);
   const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -469,8 +584,9 @@ function exportPool() {
 
 // === STATS ===
 function updateStats() {
-  document.getElementById('statPeople').textContent = pool.length;
-  document.getElementById('statOrgs').textContent = [...new Set(pool.map(p => p.org))].length;
+  const activePool = pool.filter(p => p.is_active !== false);
+  document.getElementById('statPeople').textContent = activePool.length;
+  document.getElementById('statOrgs').textContent = orgs.length;
 }
 
 // === TOAST ===
@@ -485,9 +601,8 @@ function showToast(msg) {
 document.getElementById('newPersonName').addEventListener('keydown', e => { if (e.key === 'Enter') addPerson(); });
 document.getElementById('newOrgName').addEventListener('keydown', e => { if (e.key === 'Enter') addOrg(); });
 
-// === INIT ===
-renderPeople();
-renderOrgs();
+// === START ===
+init();
 </script>
 </body>
 </html>

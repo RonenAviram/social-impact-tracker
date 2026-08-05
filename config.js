@@ -4,6 +4,34 @@
 
 const CONFIG = {
 
+  // === Supabase ===
+  SUPABASE_URL: 'https://siufqucjxcuhdfexzfkq.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpdWZxdWNqeGN1aGRmZXh6ZmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MzU4MTcsImV4cCI6MjEwMTUxMTgxN30.82aJREjLWV-DZ3FX-nrJwy2-6o60vq9NGZgWqqySeo8',
+  // Campaign ID — set after running migration, then update this value
+  CAMPAIGN_ID: '87ffac94-18ab-43e3-bedb-f7cc877973f8',
+
+  _supabase: null,
+  db() {
+    if (!this._supabase && typeof supabase !== 'undefined') {
+      this._supabase = supabase.createClient(this.SUPABASE_URL, this.SUPABASE_ANON_KEY);
+    }
+    return this._supabase;
+  },
+
+  // Session helpers — stored in localStorage
+  getSession() {
+    try {
+      const s = localStorage.getItem('sit_session');
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  },
+  setSession(profileId, name, orgName, role) {
+    localStorage.setItem('sit_session', JSON.stringify({ profileId, name, orgName, role }));
+  },
+  clearSession() {
+    localStorage.removeItem('sit_session');
+  },
+
   // === פלטפורמות ===
   // כל פלטפורמה מגדירה: id, name, icon, color (לגרפים), types (סוגי תוכן), metrics (נתונים למדידה)
   // metrics.onlyTypes — אם מוגדר, הנתון רלוונטי רק לסוגי תוכן מסוימים

@@ -297,14 +297,17 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 <div class="footer">קווים אדומים © 2026 | דשבורד חברתי</div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// =================== DATA (from config.js) ===================
+// =================== DATA (from Supabase) ===================
 const ORGS = CONFIG.ORGS;
 const PLATFORMS = CONFIG.PLATFORMS;
-// Build TYPES lookup from config
 const TYPES = {};
 PLATFORMS.forEach(p => { TYPES[p.id] = p.types; });
+
+// Entries loaded from DB
+let entries = [];
 
 // Build filter chips from config
 function buildFilterChips() {
@@ -320,97 +323,64 @@ function buildFilterChips() {
 }
 buildFilterChips();
 
-const FULL_NAMES = [
-  'מיכל פרינס','נועה לוינסון','יובל אדלר','דנה שמעוני','אורי ברקוביץ','שירה נחמני',
-  'רון דביר','תמר אלוני','גיל סגל','ליאור כהן','הדס מזרחי','עומר גולדשטיין',
-  'רוני בן דוד','איילת הרשקוביץ','ניר פלדמן','מאיה ויינשטיין','אדם שפירא',
-  'שני אברהמי','דניאל קפלן','יעל מורנו','עידו רוזנבלט','נטע גרינברג',
-  'איתי שטרן','ליאת פרידמן','בן זמיר','הילה ברנשטיין','אמיר חדד',
-  'סיון עמרם','דור אסולין','ענבר רפפורט','גל תורג\'מן','אפרת דקל','עמית ארד','רותם שגיא'
-];
+// Load data from Supabase
+async function loadDashboardData() {
+  const db = CONFIG.db();
+  if (!db) return;
 
-function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  const { data, error } = await db.rpc('get_dashboard_data', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  if (error) { console.error('Dashboard load error:', error); return; }
 
-const people = FULL_NAMES.map((name, i) => ({
-  id: i, name,
-  org: i === 0 ? 'קווים אדומים' : ORGS[i % ORGS.length]
-}));
+  // Transform DB rows to the entries format that all render functions expect
+  entries = (data || []).map(row => {
+    const plat = CONFIG.getPlatform(row.platform_id);
+    const metrics = row.latest_metrics || {};
 
-// Generate entries with richer data
-const entries = [];
-for (let day = 15; day <= 25; day++) {
-  const count = rand(6, 14);
-  for (let j = 0; j < count; j++) {
-    const person = people[rand(0, people.length - 1)];
-    const platIdx = rand(0, PLATFORMS.length - 1);
-    const plat = PLATFORMS[platIdx];
-    const types = TYPES[plat.id];
-    const type = types[rand(0, types.length - 1)];
+    // Calculate reach: sum of all isReach metrics for this platform
+    const reachIds = CONFIG.getReachMetricIds(row.platform_id);
+    const reach = reachIds.reduce((s, id) => s + (metrics[id] || 0), 0);
 
-    // Generate platform-specific metrics
-    const reach = rand(200, 8000);
-    const likes = rand(10, Math.floor(reach * 0.3));
-    const comments = rand(2, Math.floor(likes * 0.4));
-    const shares = rand(0, Math.floor(likes * 0.2));
-    const saves = rand(0, Math.floor(likes * 0.15));
-    const views = rand(reach, reach * 3);
-    const retweets = rand(0, Math.floor(likes * 0.3));
-    const replies = rand(1, Math.floor(comments * 0.8) || 2);
-    const impressions = rand(reach, reach * 2);
-    const listens = rand(50, 600);
-    const new_followers = rand(0, 15);
-    const avg_listen = rand(5, 35);
-    const video_views = rand(Math.floor(reach * 0.3), reach);
+    // Calculate engagement: sum of all isEngagement metrics
+    const engIds = CONFIG.getEngagementMetricIds(row.platform_id);
+    const engagement = engIds.reduce((s, id) => s + (metrics[id] || 0), 0);
 
-    const m = { likes, comments, shares, saves, views, reach, retweets, replies, impressions, listens, new_followers, avg_listen, video_views };
-
-    const sampleLinks = {
-      facebook: `https://facebook.com/post/${rand(100000,999999)}`,
-      instagram: `https://instagram.com/p/${String.fromCharCode(65+rand(0,25))}${rand(1000,9999)}`,
-      tiktok: `https://tiktok.com/@user/video/${rand(1000000,9999999)}`,
-      twitter: `https://x.com/user/status/${rand(1000000,9999999)}`,
-      linkedin: `https://linkedin.com/posts/${rand(10000,99999)}`,
-      spotify: `https://open.spotify.com/episode/${rand(100000,999999)}`,
-      youtube: `https://youtube.com/watch?v=${rand(10000,99999)}`,
-      email: `https://mailchimp.com/campaign/${rand(1000,9999)}`,
-      newspaper: '',
-      website: `https://example.org/article/${rand(100,999)}`,
-      whatsapp: ''
+    return {
+      date: row.upload_date,
+      uploadDate: row.upload_date,
+      person: { id: row.profile_id, name: row.profile_name, org: row.org_name },
+      platform: row.platform_id,
+      platformName: plat ? plat.name : row.platform_id,
+      type: row.content_type,
+      metrics,
+      reach,
+      engagement,
+      link: row.link || ''
     };
-    // uploadDate may differ from submission date — simulate some being uploaded 0-2 days before
-    const uploadOffset = rand(0, 2);
-    const uploadDay = Math.max(15, day - uploadOffset);
-
-    entries.push({
-      date: `2026-06-${String(day).padStart(2, '0')}`,
-      uploadDate: `2026-06-${String(uploadDay).padStart(2, '0')}`,
-      person, platform: plat.id, platformName: plat.name, type, metrics: m,
-      reach: plat.id === 'spotify' ? listens : (reach || impressions),
-      engagement: likes + comments + shares,
-      link: sampleLinks[plat.id] || `https://example.com/${rand(1000,9999)}`
-    });
-  }
-}
-
-// Boost מיכל פרינס — add extra high-performing entries for her
-for (let day = 15; day <= 25; day++) {
-  const michal = people[0]; // מיכל פרינס
-  if (rand(0, 1) === 0) continue; // ~half the days
-  const plat = PLATFORMS[rand(0, 2)]; // FB/IG/TT
-  const types = TYPES[plat.id];
-  const type = types[rand(0, types.length - 1)];
-  const reach = rand(4000, 12000);
-  const likes = rand(200, Math.floor(reach * 0.4));
-  const comments = rand(30, Math.floor(likes * 0.5));
-  const shares = rand(10, Math.floor(likes * 0.3));
-  const m = { likes, comments, shares, saves: rand(5, 40), views: rand(reach, reach * 3), reach, retweets: 0, replies: comments, impressions: reach * 2, listens: 0, new_followers: 0, avg_listen: 0, video_views: rand(reach, reach * 2) };
-  entries.push({
-    date: `2026-06-${String(day).padStart(2, '0')}`,
-    uploadDate: `2026-06-${String(day).padStart(2, '0')}`,
-    person: michal, platform: plat.id, platformName: plat.name, type, metrics: m,
-    reach, engagement: likes + comments + shares,
-    link: `https://facebook.com/michalprins/posts/${rand(100000,999999)}`
   });
+
+  // Load campaign info
+  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  if (campData) {
+    document.querySelector('#topicSelect option[selected]').textContent = campData.name;
+    if (campData.status === 'ended') updateCampStatus('ended');
+    else if (campData.status === 'paused') updateCampStatus('paused');
+  }
+
+  // Load goals
+  const { data: goalsData } = await db.from('campaign_goals')
+    .select('*')
+    .eq('campaign_id', CONFIG.CAMPAIGN_ID)
+    .order('sort_order');
+  if (goalsData) window._campaignGoals = goalsData;
+
+  // Build org filter chips from actual data
+  const actualOrgs = [...new Set(entries.map(e => e.person.org))];
+  const orgContainer = document.getElementById('orgFilters');
+  orgContainer.innerHTML = '<div class="filter-label">ארגון:</div>' +
+    '<button class="org-chip active" data-org="all" onclick="toggleOrgFilter(this)">הכל</button>' +
+    actualOrgs.map(o => `<button class="org-chip" data-org="${o}" onclick="toggleOrgFilter(this)">${o}</button>`).join('');
+
+  renderAll();
 }
 
 // =================== STATE ===================
@@ -517,16 +487,28 @@ function animateValue(id, target) {
 function renderGoals() {
   const d = filtered();
   const totalReach = d.reduce((s, e) => s + e.reach, 0);
-  const fbEntries = d.filter(e => e.platform === 'facebook');
-  const avgFbReach = fbEntries.length > 0 ? Math.round(fbEntries.reduce((s, e) => s + e.reach, 0) / fbEntries.length) : 0;
   const unique = new Set(d.map(e => e.person.id));
 
-  const goals = [
-    { name: 'חשיפות כוללות', current: totalReach, target: 2000000 },
-    { name: 'תכנים שהועלו', current: d.length, target: 150 },
-    { name: 'חשיפות ממוצעות לפוסט FB', current: avgFbReach, target: 1000 },
-    { name: 'משתתפים פעילים', current: unique.size, target: 50 }
-  ];
+  // Map goal names to computed current values
+  const goalValues = {
+    'חשיפות כוללות': totalReach,
+    'תכנים שהועלו': d.length,
+    'משתתפים פעילים': unique.size,
+  };
+  // Special: FB average reach
+  const fbEntries = d.filter(e => e.platform === 'facebook');
+  goalValues['חשיפות ממוצעות לפוסט FB'] = fbEntries.length > 0
+    ? Math.round(fbEntries.reduce((s, e) => s + e.reach, 0) / fbEntries.length) : 0;
+
+  const dbGoals = window._campaignGoals || [];
+  const goals = dbGoals.map(g => ({
+    name: g.name,
+    current: goalValues[g.name] || 0,
+    target: g.target_value
+  }));
+
+  // Fallback if no DB goals
+  if (goals.length === 0) return;
 
   const container = document.getElementById('goalsContainer');
   container.innerHTML = '';
@@ -861,11 +843,19 @@ function renderAll() {
   renderRawData();
 }
 
-function toggleAdmin() {
+async function toggleAdmin() {
   const cb = document.getElementById('adminCheck');
   if (cb.checked) {
     const pass = prompt('הזיני סיסמת מנהל:');
-    if (pass !== 'nadav') {
+    if (!pass) { cb.checked = false; return; }
+
+    const db = CONFIG.db();
+    const { data: isValid } = await db.rpc('verify_admin', {
+      p_campaign_id: CONFIG.CAMPAIGN_ID,
+      p_password: pass
+    });
+
+    if (!isValid) {
       cb.checked = false;
       showToast('סיסמה שגויה');
       return;
@@ -877,8 +867,14 @@ function toggleAdmin() {
   document.body.classList.toggle('admin-mode', show);
 }
 
-function updateCampStatus() {
-  campaignStatus = document.getElementById('campStatusSelect').value;
+async function updateCampStatusDB(newStatus) {
+  const db = CONFIG.db();
+  await db.from('campaigns').update({ status: newStatus }).eq('id', CONFIG.CAMPAIGN_ID);
+}
+
+function updateCampStatus(forceStatus) {
+  campaignStatus = forceStatus || document.getElementById('campStatusSelect').value;
+  if (!forceStatus) updateCampStatusDB(campaignStatus);
   const badge = document.getElementById('statusBadge');
   const dot = badge.querySelector('.live-dot');
   const label = badge.querySelector('.live-label');
@@ -928,42 +924,13 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// === LIVE SIMULATION — gentle, no full re-render ===
-let liveTimer = null;
-function startLiveUpdates() {
-  liveTimer = setInterval(() => {
-    const person = people[rand(0, people.length - 1)];
-    const platIdx = rand(0, PLATFORMS.length - 1);
-    const plat = PLATFORMS[platIdx];
-    const types = TYPES[plat.id];
-    const type = types[rand(0, types.length - 1)];
-    const reach = rand(200, 5000);
-    const likes = rand(10, Math.floor(reach * 0.25));
-    const comments = rand(2, Math.floor(likes * 0.3));
-    const shares = rand(0, Math.floor(likes * 0.15));
-    const m = { likes, comments, shares, saves: rand(0, 10), views: rand(reach, reach * 2), reach, retweets: 0, replies: comments, impressions: reach * 2, listens: rand(30, 200), new_followers: rand(0, 5), avg_listen: rand(5, 25), video_views: rand(reach * 0.3, reach) };
-
-    entries.push({
-      date: '2026-06-25', uploadDate: '2026-06-25', person, platform: plat.id, platformName: plat.name, type, metrics: m,
-      reach: plat.id === 'spotify' ? m.listens : reach,
-      engagement: likes + comments + shares,
-      link: `https://${plat.id}.com/live/${rand(10000,99999)}`
-    });
-
-    // Only update metrics cards — no full chart re-render to avoid flicker
-    renderMetrics();
-  }, 15000);
-}
-
 // Topic switcher — currently single topic, ready for expansion
 function changeTopic() {
-  // When more topics are added, regenerate data here
-  renderAll();
+  loadDashboardData();
 }
 
-// Initial
-renderAll();
-startLiveUpdates();
+// Initial load from Supabase
+loadDashboardData();
 </script>
 </body>
 </html>
