@@ -527,8 +527,36 @@ function renderGoals() {
   });
 }
 
+function setChartEmptyState(canvasId, isEmpty) {
+  const canvas = document.getElementById(canvasId);
+  const wrap = canvas.parentElement;
+  let placeholder = wrap.querySelector('.chart-empty');
+  if (!placeholder) {
+    placeholder = document.createElement('div');
+    placeholder.className = 'chart-empty';
+    placeholder.style.cssText = 'display:none;text-align:center;padding:48px 16px;font-size:15px;font-weight:500;color:var(--gray-400)';
+    placeholder.textContent = 'אין נתונים להצגה';
+    wrap.appendChild(placeholder);
+  }
+  canvas.style.display = isEmpty ? 'none' : 'block';
+  placeholder.style.display = isEmpty ? 'block' : 'none';
+}
+
 function renderCharts() {
   const d = filtered();
+  const noData = d.length === 0;
+
+  // Set empty state for all 4 charts
+  ['chartPlatform', 'chartUploads', 'chartEngagement', 'chartTimeline'].forEach(id => setChartEmptyState(id, noData));
+
+  if (noData) {
+    // Destroy existing charts so axes don't linger
+    if (chartPlatform) { chartPlatform.destroy(); chartPlatform = null; }
+    if (chartUploads) { chartUploads.destroy(); chartUploads = null; }
+    if (chartEngagement) { chartEngagement.destroy(); chartEngagement = null; }
+    if (chartTimeline) { chartTimeline.destroy(); chartTimeline = null; }
+    return;
+  }
 
   // Platform donut with percentages and clickable legend
   const platCounts = {};
