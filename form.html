@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קווים אדומים | הזנת נתוני תוכן</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--blue-50:#E6F1FB;--blue-100:#B5D4F4;--blue-200:#85B7EB;--blue-400:#378ADD;--blue-600:#185FA5;--blue-800:#0C447C;--blue-900:#042C53;
+--teal-50:#E1F5EE;--teal-100:#9FE1CB;--teal-200:#5DCAA5;--teal-400:#1D9E75;--teal-600:#0F6E56;--teal-800:#085041;
+--gray-50:#F8F9FA;--gray-100:#F1F3F5;--gray-200:#E9ECEF;--gray-300:#DEE2E6;--gray-400:#ADB5BD;--gray-500:#868E96;--gray-600:#495057;--gray-700:#343A40;--gray-800:#212529;
+--green-50:#EAF3DE;--green-400:#639922;
+--red-50:#FCEBEB;--red-400:#E24B4A;
+--radius:12px;--radius-sm:8px;
+}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;direction:rtl}
+.container{max-width:600px;margin:0 auto;padding:24px 16px 60px}
+
+.header{text-align:center;margin-bottom:28px}
+.logo{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--blue-400),var(--teal-400));display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+.logo svg{width:32px;height:32px;fill:#fff}
+.header h1{font-size:22px;font-weight:600;color:var(--blue-900);margin-bottom:4px}
+.campaign-badge{padding:6px 16px;border-radius:20px;border:1.5px solid var(--teal-200);font-size:14px;font-weight:500;color:var(--teal-800);background:var(--teal-50);display:inline-block;margin-top:4px}
+
+.screen{display:none;animation:fadeIn .3s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Login */
+.login-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:24px 20px}
+.login-title{font-size:17px;font-weight:600;color:var(--blue-800);margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--gray-500);margin-bottom:5px}
+.field select,.field input{width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:#fff;color:var(--gray-800);transition:border-color .2s}
+.field select:focus,.field input:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+
+/* Buttons */
+.btn{padding:12px 24px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:var(--blue-400);color:#fff}
+.btn-primary:hover{background:var(--blue-600)}
+.btn-primary:disabled{background:var(--gray-300);color:var(--gray-400);cursor:not-allowed}
+.btn-secondary{background:transparent;color:var(--blue-600);border:1.5px solid var(--blue-200)}
+.btn-secondary:hover{background:var(--blue-50)}
+.btn-danger{background:transparent;color:var(--red-400);border:1.5px solid var(--gray-200)}
+.btn-danger:hover{background:var(--red-50);border-color:var(--red-400)}
+.btn-full{width:100%}
+.btn-row{display:flex;gap:8px;margin-top:20px}
+.btn-row .btn{flex:1}
+
+/* User bar */
+.user-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px 16px;background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200)}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--blue-400);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;flex-shrink:0}
+.user-bar .user-name{font-size:14px;font-weight:500;color:var(--gray-700)}
+.user-bar .user-org{font-size:12px;color:var(--gray-400)}
+.user-bar .btn-logout{margin-right:auto;font-size:12px;color:var(--gray-400);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:4px}
+.user-bar .btn-logout:hover{background:var(--gray-100);color:var(--gray-600)}
+
+/* Personal area */
+.area-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.area-title{font-size:17px;font-weight:600;color:var(--blue-800)}
+.add-btn{display:flex;align-items:center;gap:5px;padding:8px 16px;border-radius:var(--radius-sm);border:none;background:var(--blue-400);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.add-btn:hover{background:var(--blue-600)}
+
+.content-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:16px;margin-bottom:12px;transition:border-color .15s}
+.content-card:hover{border-color:var(--blue-200)}
+.cc-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.cc-icon{font-size:22px}
+.cc-title{font-size:15px;font-weight:600;color:var(--blue-800);flex:1}
+.cc-type{font-size:11px;color:var(--blue-600);background:var(--blue-50);padding:3px 10px;border-radius:12px}
+.cc-link{font-size:12px;color:var(--blue-600);text-decoration:none;display:block;margin-bottom:6px;direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-link:hover{text-decoration:underline}
+.cc-dates{font-size:11px;color:var(--gray-400);margin-bottom:10px}
+.cc-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:10px}
+.cc-metric{text-align:center;background:var(--gray-50);border-radius:6px;padding:8px 4px}
+.cc-metric .val{font-size:16px;font-weight:600;color:var(--blue-800)}
+.cc-metric .lbl{font-size:10px;color:var(--gray-500)}
+.cc-actions{display:flex;gap:8px}
+.cc-actions .btn{flex:1;padding:8px;font-size:13px}
+
+.empty-state{text-align:center;padding:40px 20px;background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200)}
+.empty-icon{font-size:48px;margin-bottom:12px;display:block}
+.empty-state h3{font-size:17px;color:var(--blue-800);margin-bottom:8px}
+.empty-state p{font-size:14px;color:var(--gray-500);margin-bottom:20px}
+
+/* Upload form */
+.form-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:20px}
+.form-title{font-size:17px;font-weight:600;color:var(--blue-800);margin-bottom:16px}
+
+.platform-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:420px){.platform-grid{grid-template-columns:repeat(2,1fr)}}
+.platform-card{border:2px solid var(--gray-200);border-radius:var(--radius);padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;background:#fff;position:relative}
+.platform-card:hover{border-color:var(--blue-200);background:var(--blue-50)}
+.platform-card.selected{border-color:var(--blue-400);background:var(--blue-50)}
+.platform-card .icon{font-size:24px;margin-bottom:4px;display:block}
+.platform-card .name{font-size:12px;font-weight:500;color:var(--gray-700)}
+.platform-card .check{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;border:2px solid var(--gray-300);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.platform-card.selected .check{background:var(--blue-400);border-color:var(--blue-400)}
+.platform-card.selected .check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
+
+.type-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.type-pill{border:1.5px solid var(--gray-200);border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;transition:all .2s;background:#fff;color:var(--gray-600)}
+.type-pill:hover{border-color:var(--blue-200)}
+.type-pill.selected{border-color:var(--blue-400);background:var(--blue-50);color:var(--blue-800);font-weight:500}
+
+.link-field input{direction:ltr;text-align:left}
+
+.note{font-size:12px;color:var(--gray-400);text-align:center;margin-top:12px}
+
+/* Update form */
+.update-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--gray-100)}
+.update-icon{font-size:28px}
+.update-info h3{font-size:16px;font-weight:600;color:var(--blue-800)}
+.update-info p{font-size:12px;color:var(--gray-400)}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:420px){.metrics-grid{grid-template-columns:1fr}}
+.metric-field label{display:block;font-size:12px;font-weight:500;color:var(--gray-500);margin-bottom:3px}
+.metric-field label .req{color:var(--red-400)}
+.metric-field input{width:100%;padding:9px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;color:var(--gray-800);transition:border-color .2s;direction:ltr;text-align:right}
+.metric-field input:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.required-note{font-size:12px;color:var(--gray-500);background:var(--gray-50);padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:14px}
+.date-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.date-row label{font-size:12px;color:var(--gray-500);white-space:nowrap}
+.date-row input{flex:1;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit}
+
+/* Confirm dialog */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100;display:none}
+.confirm-overlay.show{display:flex}
+.confirm-box{background:#fff;border-radius:var(--radius);padding:24px;max-width:320px;width:90%;text-align:center}
+.confirm-box h3{font-size:16px;color:var(--gray-800);margin-bottom:8px}
+.confirm-box p{font-size:13px;color:var(--gray-500);margin-bottom:20px}
+
+/* Success */
+.success-screen{text-align:center;padding:40px 20px}
+.success-icon{width:80px;height:80px;border-radius:50%;background:var(--teal-50);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;animation:popIn .4s ease}
+.success-icon svg{width:40px;height:40px;stroke:var(--teal-400);fill:none;stroke-width:2.5}
+@keyframes popIn{0%{transform:scale(0)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.success-screen h2{font-size:20px;color:var(--teal-800);margin-bottom:8px}
+.success-screen p{font-size:14px;color:var(--gray-500);margin-bottom:20px;line-height:1.6}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+.skip-link{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--gray-400);text-decoration:none;transition:color .2s}
+.skip-link:hover{color:var(--blue-600)}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo" style="background:none"><img src="logo.jpg" alt="קווים אדומים" style="width:64px;height:64px;object-fit:contain" onerror="this.parentNode.style.background='linear-gradient(135deg,var(--blue-400),var(--teal-400))'"></div>
+    <h1>קווים אדומים</h1>
+    <div class="campaign-badge" id="campaignName">מניעת אלימות בזוגיות צעירה</div>
+  </div>
+
+  <!-- Screen 1: Login -->
+  <div class="screen active" id="screenLogin">
+    <div class="login-card">
+      <div class="login-title">כניסה למערכת</div>
+      <div class="field">
+        <label>שם מלא</label>
+        <select id="loginName" onchange="onNameChange()">
+          <option value="">בחירת שם...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>ארגון</label>
+        <select id="loginOrg" onchange="checkLoginReady()">
+          <option value="">בחירת ארגון...</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full" id="btnLogin" disabled onclick="doLogin()">כניסה</button>
+      <a href="dashboard.html" class="skip-link">צפייה בדשבורד ←</a>
+    </div>
+  </div>
+
+  <!-- Screen 2: Personal area -->
+  <div class="screen" id="screenPersonal">
+    <div class="user-bar" id="userBar">
+      <div class="user-avatar" id="userAvatar">—</div>
+      <div>
+        <div class="user-name" id="userName">—</div>
+        <div class="user-org" id="userOrg">—</div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">החלף משתמש</button>
+    </div>
+    <div class="area-header">
+      <div class="area-title">התכנים שלי</div>
+      <button class="add-btn" onclick="showUploadScreen()">+ הוסף תוכן</button>
+    </div>
+    <div id="contentList"></div>
+    <a href="dashboard.html" class="skip-link" style="margin-top:24px">צפייה בדשבורד ←</a>
+  </div>
+
+  <!-- Screen 3: Upload new content -->
+  <div class="screen" id="screenUpload">
+    <div class="user-bar">
+      <div class="user-avatar" id="uploadAvatar">—</div>
+      <div>
+        <div class="user-name" id="uploadUserName">—</div>
+        <div class="user-org" id="uploadUserOrg">—</div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-title">העלאת תוכן חדש</div>
+
+      <!-- Step 1: Platform selection (multi) -->
+      <div id="uploadStep1">
+        <div class="field"><label>בחירת פלטפורמות (ניתן לבחור כמה)</label></div>
+        <div class="platform-grid" id="uploadPlatformGrid"></div>
+        <button class="btn btn-primary btn-full" id="btnContinueUpload" disabled onclick="startPlatformDetails()" style="margin-top:8px">המשך</button>
+      </div>
+
+      <!-- Step 2: Per-platform details (wizard) -->
+      <div id="uploadStep2" style="display:none">
+        <div id="uploadStepIndicator" style="font-size:13px;color:var(--gray-500);margin-bottom:12px;text-align:center"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px;background:var(--blue-50);border-radius:var(--radius-sm)">
+          <span id="uploadPlatIcon" style="font-size:24px"></span>
+          <span id="uploadPlatName" style="font-size:15px;font-weight:600;color:var(--blue-800)"></span>
+        </div>
+        <div class="field" id="uploadTypeField">
+          <label>סוג תוכן</label>
+          <div class="type-pills" id="uploadTypePills"></div>
+        </div>
+        <div class="field link-field">
+          <label>קישור לתוכן <span style="color:var(--red-400)">*</span></label>
+          <input type="url" id="uploadLink" placeholder="https://...">
+        </div>
+        <div class="field">
+          <label>תאריך העלאה</label>
+          <input type="date" id="uploadDate">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnNextPlatform" onclick="nextPlatformStep()">הבא</button>
+          <button class="btn btn-secondary" id="btnPrevPlatform" onclick="prevPlatformStep()" style="display:none">הקודם</button>
+        </div>
+        <div class="note">הנתונים יתאפסו ל-0 — ניתן לעדכן בכל עת מהאזור האישי</div>
+      </div>
+
+      <button class="btn btn-secondary btn-full" style="margin-top:12px" onclick="backFromUpload()">חזרה</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: Update metrics -->
+  <div class="screen" id="screenUpdate">
+    <div class="user-bar">
+      <div class="user-avatar" id="updateAvatar">—</div>
+      <div>
+        <div class="user-name" id="updateUserName">—</div>
+        <div class="user-org" id="updateUserOrg">—</div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="update-header" id="updateHeader"></div>
+      <div class="required-note">כל השדות חובה — אם לא רלוונטי הזן 0</div>
+      <div class="metrics-grid" id="updateMetrics"></div>
+      <div class="date-row">
+        <label>תאריך עדכון</label>
+        <input type="date" id="updateDate">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnSaveUpdate" onclick="saveUpdate()">שמור עדכון</button>
+        <button class="btn btn-secondary" onclick="showScreen('screenPersonal')">חזרה</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 5: Success -->
+  <div class="screen" id="screenSuccess">
+    <div class="success-screen">
+      <div class="success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2 id="successTitle">הנתונים נשמרו בהצלחה!</h2>
+      <p id="successMsg">התכנים שלך עודכנו.</p>
+      <button class="btn btn-primary btn-full" onclick="showScreen('screenPersonal')">מעבר לאזור האישי</button>
+      <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="window.open('dashboard.html','_blank')">צפייה בדשבורד</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Confirm dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>מחיקת תוכן</h3>
+    <p id="confirmMsg">בטוח שברצונך למחוק תוכן זה?</p>
+    <div class="btn-row">
+      <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">מחק</button>
+      <button class="btn btn-secondary" onclick="hideConfirm()">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+// =================== DATA (from config.js) ===================
+const PLATFORMS = CONFIG.PLATFORMS;
+
+// Simulated campaign data (will come from Supabase)
+const CAMPAIGN = {
+  name: 'מניעת אלימות בזוגיות צעירה',
+  dates: '22 ביוני – 28 ביוני 2026',
+  status: 'active' // 'active' | 'ended'
+};
+
+// Simulated pool (will come from Supabase via campaign)
+const POOL = [
+  {name:'מיכל פרינס', org:'קווים אדומים'},
+  {name:'דנה כהן', org:'ויצו'},
+  {name:'יעל לוי', org:'נעמת'},
+  {name:'רותם שמש', org:'דלת פתוחה'},
+  {name:'אורלי דוד', org:'לדעת לבחור נכון'},
+  {name:'נועה בן דוד', org:'איגוד העובדים הסוציאליים'},
+  {name:'שירה גולן', org:'לתת פה'},
+  {name:'מאיה ברק', org:'לא לאלימות'},
+  {name:'תמר רוזן', org:'קווים אדומים'},
+  {name:'ליאת כץ', org:'ויצו'}
+];
+
+// Simulated user content database
+let userContents = {};
+
+// Current state
+let currentUser = null;
+let editingContentId = null;
+let deletingContentId = null;
+let uploadSelectedPlatforms = [];
+let uploadPlatformData = {};
+let currentPlatformIdx = 0;
+
+// =================== INIT ===================
+function init() {
+  const badge = document.getElementById('campaignName');
+  badge.textContent = CAMPAIGN.name;
+  if (CAMPAIGN.status === 'ended') {
+    badge.textContent += ' (הסתיים)';
+    badge.style.borderColor = '#ccc';
+    badge.style.color = '#888';
+    badge.style.background = '#f5f5f5';
+  }
+  document.getElementById('uploadDate').value = today();
+
+  // Populate login dropdown — names only, org auto-fills
+  const nameSelect = document.getElementById('loginName');
+  const uniqueNames = [...new Set(POOL.map(p => p.name))];
+  uniqueNames.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; nameSelect.appendChild(o); });
+
+  // Build upload platform grid (multi-select)
+  const grid = document.getElementById('uploadPlatformGrid');
+  PLATFORMS.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'platform-card'; d.dataset.id = p.id;
+    d.innerHTML = `<div class="check"></div><span class="icon">${p.icon}</span><span class="name">${p.name}</span>`;
+    d.onclick = () => toggleUploadPlatform(p.id);
+    grid.appendChild(d);
+  });
+
+  // Seed demo data for one user
+  seedDemoData();
+}
+
+function seedDemoData() {
+  const key = 'מיכל פרינס|קווים אדומים';
+  userContents[key] = [
+    { id: CONFIG.generateId(), platformId:'facebook', type:'פוסט', link:'https://facebook.com/post/12345', uploadDate:'2026-06-22', metrics:{likes:356,comments:114,shares:42,reach:1555}, lastUpdate:'2026-06-25' },
+    { id: CONFIG.generateId(), platformId:'instagram', type:'רילס', link:'https://instagram.com/reel/abc123', uploadDate:'2026-06-23', metrics:{likes:230,comments:45,saves:18,reach:2100,views:1400}, lastUpdate:'2026-06-24' }
+  ];
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+
+function getInitials(name) {
+  const parts = name.split(' ');
+  return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0,2);
+}
+
+function getUserKey() { return currentUser ? `${currentUser.name}|${currentUser.org}` : null; }
+function getUserContents() { return userContents[getUserKey()] || []; }
+
+// =================== NAVIGATION ===================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (id === 'screenPersonal') renderPersonalArea();
+}
+
+// =================== LOGIN ===================
+function onNameChange() {
+  const name = document.getElementById('loginName').value;
+  const orgSelect = document.getElementById('loginOrg');
+
+  // Find orgs for this person
+  const orgsForName = POOL.filter(p => p.name === name).map(p => p.org);
+
+  // Clear and repopulate org dropdown
+  orgSelect.innerHTML = '<option value="">בחירת ארגון...</option>';
+  orgsForName.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    orgSelect.appendChild(opt);
+  });
+
+  // Auto-select if only one org
+  if (orgsForName.length === 1) {
+    orgSelect.value = orgsForName[0];
+    orgSelect.disabled = true;
+  } else {
+    orgSelect.disabled = false;
+  }
+
+  checkLoginReady();
+}
+
+function checkLoginReady() {
+  const name = document.getElementById('loginName').value;
+  const org = document.getElementById('loginOrg').value;
+  document.getElementById('btnLogin').disabled = !name || !org;
+}
+
+function doLogin() {
+  const name = document.getElementById('loginName').value;
+  const org = document.getElementById('loginOrg').value;
+  if (!name || !org) return;
+  currentUser = { name, org };
+
+  // Update user bars across screens
+  const initials = getInitials(name);
+  ['userAvatar','uploadAvatar','updateAvatar'].forEach(id => document.getElementById(id).textContent = initials);
+  ['userName','uploadUserName','updateUserName'].forEach(id => document.getElementById(id).textContent = name);
+  ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => document.getElementById(id).textContent = org);
+
+  showScreen('screenPersonal');
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('loginName').value = '';
+  const orgSelect = document.getElementById('loginOrg');
+  orgSelect.innerHTML = '<option value="">בחירת ארגון...</option>';
+  orgSelect.disabled = false;
+  document.getElementById('btnLogin').disabled = true;
+  showScreen('screenLogin');
+}
+
+// =================== PERSONAL AREA ===================
+function renderPersonalArea() {
+  const list = document.getElementById('contentList');
+  const contents = getUserContents();
+
+  if (contents.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <span class="empty-icon">📋</span>
+      <h3>עדיין לא העלית תכנים</h3>
+      <p>לחץ על "הוסף תוכן" כדי להתחיל</p>
+      <button class="btn btn-primary" onclick="showUploadScreen()">+ הוסף תוכן ראשון</button>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+  contents.forEach(c => {
+    const plat = PLATFORMS.find(p => p.id === c.platformId);
+    if (!plat) return;
+    const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.type));
+
+    html += `<div class="content-card">
+      <div class="cc-top">
+        <span class="cc-icon">${plat.icon}</span>
+        <span class="cc-title">${plat.name}</span>
+        <span class="cc-type">${c.type}</span>
+      </div>
+      <a href="${c.link}" class="cc-link" target="_blank">${c.link}</a>
+      <div class="cc-dates">הועלה: ${formatDate(c.uploadDate)}${c.lastUpdate ? ' · עודכן: ' + formatDate(c.lastUpdate) : ''}</div>
+      <div class="cc-metrics">`;
+    filteredMetrics.forEach(m => {
+      const val = c.metrics[m.id] || 0;
+      html += `<div class="cc-metric"><div class="val">${val.toLocaleString()}</div><div class="lbl">${m.label}</div></div>`;
+    });
+    html += `</div>
+      <div class="cc-actions">
+        <button class="btn btn-primary" onclick="showUpdateScreen('${c.id}')">עדכן נתונים</button>
+        <button class="btn btn-danger" onclick="showDeleteConfirm('${c.id}')">מחק</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const parts = d.split('-');
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+
+// =================== UPLOAD ===================
+function showUploadScreen() {
+  if (CAMPAIGN.status === 'ended') {
+    alert('הקמפיין הסתיים — לא ניתן להעלות תוכן חדש.');
+    return;
+  }
+  uploadSelectedPlatforms = [];
+  uploadPlatformData = {};
+  currentPlatformIdx = 0;
+  document.querySelectorAll('#uploadPlatformGrid .platform-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('uploadStep1').style.display = 'block';
+  document.getElementById('uploadStep2').style.display = 'none';
+  document.getElementById('btnContinueUpload').disabled = true;
+  showScreen('screenUpload');
+}
+
+function toggleUploadPlatform(platId) {
+  const idx = uploadSelectedPlatforms.findIndex(p => p.id === platId);
+  if (idx >= 0) {
+    uploadSelectedPlatforms.splice(idx, 1);
+  } else {
+    uploadSelectedPlatforms.push(PLATFORMS.find(p => p.id === platId));
+  }
+  document.querySelectorAll('#uploadPlatformGrid .platform-card').forEach(c => {
+    c.classList.toggle('selected', uploadSelectedPlatforms.some(p => p.id === c.dataset.id));
+  });
+  document.getElementById('btnContinueUpload').disabled = uploadSelectedPlatforms.length === 0;
+}
+
+function startPlatformDetails() {
+  if (uploadSelectedPlatforms.length === 0) return;
+  // Init data for each platform
+  uploadSelectedPlatforms.forEach(p => {
+    if (!uploadPlatformData[p.id]) {
+      uploadPlatformData[p.id] = { type: p.types[0], link: '', date: today() };
+    }
+  });
+  currentPlatformIdx = 0;
+  document.getElementById('uploadStep1').style.display = 'none';
+  document.getElementById('uploadStep2').style.display = 'block';
+  renderCurrentPlatformStep();
+}
+
+function renderCurrentPlatformStep() {
+  const plat = uploadSelectedPlatforms[currentPlatformIdx];
+  const data = uploadPlatformData[plat.id];
+  const total = uploadSelectedPlatforms.length;
+
+  // Step indicator
+  document.getElementById('uploadStepIndicator').textContent = total > 1 ? `פלטפורמה ${currentPlatformIdx + 1} מתוך ${total}` : '';
+
+  // Platform header
+  document.getElementById('uploadPlatIcon').textContent = plat.icon;
+  document.getElementById('uploadPlatName').textContent = plat.name;
+
+  // Type pills
+  const pills = document.getElementById('uploadTypePills');
+  pills.innerHTML = '';
+  plat.types.forEach(t => {
+    const pill = document.createElement('div');
+    pill.className = 'type-pill' + (t === data.type ? ' selected' : '');
+    pill.textContent = t;
+    pill.onclick = () => {
+      data.type = t;
+      pills.querySelectorAll('.type-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      validateCurrentStep();
+    };
+    pills.appendChild(pill);
+  });
+
+  // Link & date
+  document.getElementById('uploadLink').value = data.link;
+  document.getElementById('uploadDate').value = data.date;
+
+  // Navigation buttons
+  const isLast = currentPlatformIdx === total - 1;
+  document.getElementById('btnNextPlatform').textContent = isLast ? (total > 1 ? 'שמור הכל' : 'שמור') : 'הבא';
+  document.getElementById('btnPrevPlatform').style.display = currentPlatformIdx > 0 ? '' : 'none';
+
+  validateCurrentStep();
+}
+
+function validateCurrentStep() {
+  const link = document.getElementById('uploadLink').value.trim();
+  const date = document.getElementById('uploadDate').value;
+  document.getElementById('btnNextPlatform').disabled = !link || !date;
+}
+
+// Wire upload validation
+document.getElementById('uploadLink').addEventListener('input', function() {
+  const plat = uploadSelectedPlatforms[currentPlatformIdx];
+  if (plat) uploadPlatformData[plat.id].link = this.value;
+  validateCurrentStep();
+});
+document.getElementById('uploadDate').addEventListener('input', function() {
+  const plat = uploadSelectedPlatforms[currentPlatformIdx];
+  if (plat) uploadPlatformData[plat.id].date = this.value;
+  validateCurrentStep();
+});
+
+function savePlatformStepData() {
+  const plat = uploadSelectedPlatforms[currentPlatformIdx];
+  uploadPlatformData[plat.id].link = document.getElementById('uploadLink').value.trim();
+  uploadPlatformData[plat.id].date = document.getElementById('uploadDate').value;
+}
+
+function nextPlatformStep() {
+  savePlatformStepData();
+  const total = uploadSelectedPlatforms.length;
+  if (currentPlatformIdx < total - 1) {
+    currentPlatformIdx++;
+    renderCurrentPlatformStep();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    saveAllUploads();
+  }
+}
+
+function prevPlatformStep() {
+  savePlatformStepData();
+  if (currentPlatformIdx > 0) {
+    currentPlatformIdx--;
+    renderCurrentPlatformStep();
+  }
+}
+
+function backFromUpload() {
+  if (document.getElementById('uploadStep2').style.display !== 'none' && uploadSelectedPlatforms.length > 0) {
+    // Go back to platform selection
+    document.getElementById('uploadStep2').style.display = 'none';
+    document.getElementById('uploadStep1').style.display = 'block';
+  } else {
+    showScreen('screenPersonal');
+  }
+}
+
+function saveAllUploads() {
+  const key = getUserKey();
+  if (!userContents[key]) userContents[key] = [];
+
+  const names = [];
+  uploadSelectedPlatforms.forEach(plat => {
+    const data = uploadPlatformData[plat.id];
+    if (!data.link || !data.date) return;
+
+    const metrics = {};
+    const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type));
+    filteredMetrics.forEach(m => { metrics[m.id] = 0; });
+
+    userContents[key].push({
+      id: CONFIG.generateId(),
+      platformId: plat.id,
+      type: data.type,
+      link: data.link,
+      uploadDate: data.date,
+      metrics,
+      lastUpdate: null
+    });
+    names.push(`${plat.icon} ${plat.name}`);
+  });
+
+  document.getElementById('successTitle').textContent = uploadSelectedPlatforms.length > 1 ? `${uploadSelectedPlatforms.length} תכנים נוספו בהצלחה!` : 'התוכן נוסף בהצלחה!';
+  document.getElementById('successMsg').textContent = names.join(' · ');
+  showScreen('screenSuccess');
+  showToast(uploadSelectedPlatforms.length > 1 ? `${uploadSelectedPlatforms.length} תכנים נוספו` : 'התוכן נוסף');
+}
+
+// =================== UPDATE ===================
+function showUpdateScreen(contentId) {
+  editingContentId = contentId;
+  const contents = getUserContents();
+  const c = contents.find(x => x.id === contentId);
+  if (!c) return;
+
+  const plat = PLATFORMS.find(p => p.id === c.platformId);
+  if (!plat) return;
+
+  // Header
+  document.getElementById('updateHeader').innerHTML = `
+    <span class="update-icon">${plat.icon}</span>
+    <div class="update-info">
+      <h3>${plat.name} · ${c.type}</h3>
+      <p>הועלה: ${formatDate(c.uploadDate)}</p>
+    </div>`;
+
+  // Metrics fields
+  const grid = document.getElementById('updateMetrics');
+  const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.type));
+  grid.innerHTML = '';
+  filteredMetrics.forEach(m => {
+    const val = c.metrics[m.id] || 0;
+    grid.innerHTML += `<div class="metric-field">
+      <label>${m.label} <span class="req">*</span></label>
+      <input type="number" inputmode="numeric" data-metric="${m.id}" value="${val}" min="0" required>
+    </div>`;
+  });
+
+  // Date
+  document.getElementById('updateDate').value = today();
+
+  showScreen('screenUpdate');
+}
+
+function saveUpdate() {
+  const key = getUserKey();
+  const contents = userContents[key];
+  if (!contents || !editingContentId) return;
+
+  const c = contents.find(x => x.id === editingContentId);
+  const metricInputs = document.querySelectorAll('#updateMetrics input[data-metric]');
+
+  // Validate all filled
+  let allFilled = true;
+  metricInputs.forEach(inp => {
+    if (inp.value === '' || inp.value === null) allFilled = false;
+  });
+  if (!allFilled) { showToast('נא למלא את כל השדות'); return; }
+
+  // Save
+  metricInputs.forEach(inp => {
+    c.metrics[inp.dataset.metric] = parseInt(inp.value) || 0;
+  });
+  c.lastUpdate = document.getElementById('updateDate').value;
+
+  document.getElementById('successTitle').textContent = 'הנתונים עודכנו בהצלחה!';
+  document.getElementById('successMsg').textContent = 'הנתונים החדשים ישתקפו בדשבורד.';
+  showScreen('screenSuccess');
+  showToast('הנתונים עודכנו');
+}
+
+// =================== DELETE ===================
+function showDeleteConfirm(contentId) {
+  deletingContentId = contentId;
+  const contents = getUserContents();
+  const c = contents.find(x => x.id === contentId);
+  if (!c) return;
+  const plat = PLATFORMS.find(p => p.id === c.platformId);
+  document.getElementById('confirmMsg').textContent = `בטוח שברצונך למחוק את ה${c.type} ב${plat.name}?`;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+
+function hideConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('show');
+  deletingContentId = null;
+}
+
+function confirmDelete() {
+  if (!deletingContentId) return;
+  const key = getUserKey();
+  userContents[key] = userContents[key].filter(x => x.id !== deletingContentId);
+  hideConfirm();
+  renderPersonalArea();
+  showToast('התוכן נמחק');
+}
+
+// =================== TOAST ===================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init
+init();
+</script>
+</body>
+</html>

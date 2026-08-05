@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>הצעה לתחילת שיתוף פעולה — קווים אדומים</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #fff;
+    direction: rtl;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 20mm 15mm;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid #1a5c3a;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+  .header-right h1 {
+    font-size: 26px;
+    color: #1a5c3a;
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .header-right .doc-number {
+    font-size: 13px;
+    color: #555;
+  }
+  .header-left {
+    text-align: left;
+    font-size: 12px;
+    color: #444;
+    line-height: 1.7;
+  }
+  .header-left .provider-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1a1a1a;
+  }
+
+  /* Parties row */
+  .parties {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 30px;
+  }
+  .party-box {
+    flex: 1;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+  .party-box h3 {
+    font-size: 13px;
+    color: #1a5c3a;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .party-box p {
+    font-size: 12.5px;
+    margin-bottom: 2px;
+  }
+
+  /* Date and validity bar */
+  .meta-bar {
+    display: flex;
+    justify-content: space-between;
+    background: #f2f8f4;
+    border: 1px solid #c8ddd0;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 22px;
+    font-size: 12.5px;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 18px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a5c3a;
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+  }
+  .section-number {
+    display: inline-block;
+    background: #1a5c3a;
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 12px;
+    margin-left: 6px;
+  }
+  .section-intro {
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  /* Items list */
+  .items {
+    list-style: none;
+    padding: 0;
+  }
+  .items li {
+    padding: 5px 0 5px 0;
+    padding-right: 18px;
+    position: relative;
+    font-size: 13px;
+  }
+  .items li::before {
+    content: '';
+    position: absolute;
+    right: 4px;
+    top: 12px;
+    width: 6px;
+    height: 6px;
+    background: #1a5c3a;
+    border-radius: 50%;
+  }
+  .items li strong {
+    font-weight: 600;
+  }
+
+  /* Link */
+  a {
+    color: #2980b9;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* Price box */
+  .price-box {
+    background: #1a5c3a;
+    color: #fff;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .price-box .label {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .price-box .amount {
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .price-box .vat-note {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+
+  /* Terms */
+  .terms-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 20px;
+    font-size: 12.5px;
+  }
+  .terms-grid .term {
+    display: flex;
+    gap: 6px;
+  }
+  .terms-grid .term-label {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Signatures */
+  .signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    gap: 40px;
+    page-break-inside: avoid;
+  }
+  .sig-box {
+    flex: 1;
+    text-align: center;
+  }
+  .sig-line {
+    border-bottom: 1px solid #999;
+    height: 50px;
+    margin-bottom: 6px;
+  }
+  .sig-label {
+    font-size: 12px;
+    color: #666;
+  }
+
+  /* Binding note */
+  .binding-note {
+    margin-top: 25px;
+    padding: 10px 14px;
+    background: #fff9e6;
+    border: 1px solid #f0e0a0;
+    border-radius: 5px;
+    font-size: 11.5px;
+    color: #666;
+    page-break-inside: avoid;
+  }
+
+  /* Print */
+  @media print {
+    body {
+      padding: 0;
+      max-width: none;
+    }
+    .price-box {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .section-number {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .items li::before {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-right">
+    <h1>הצעה לתחילת שיתוף פעולה</h1>
+    <div class="doc-number">מסמך מס' 2026-001 | תאריך: 27 ביולי 2026</div>
+  </div>
+  <div class="header-left">
+    <div class="provider-name">רונן אבירם</div>
+    <div>עוסק פטור | 203538301</div>
+    <div>מזכרת בתיה</div>
+    <div>054-2569556</div>
+    <div>ronen6213@gmail.com</div>
+  </div>
+</div>
+
+<!-- Parties -->
+<div class="parties">
+  <div class="party-box">
+    <h3>מוגש עבור</h3>
+    <p><strong>קווים אדומים</strong></p>
+
+    <p>אשת קשר: מיכל פרינס</p>
+  </div>
+  <div class="party-box">
+    <h3>נושא</h3>
+    <p><strong>מערכת מעקב אימפקט ברשתות חברתיות</strong></p>
+    <p>טופס הזנת נתונים + דשבורד אינטראקטיבי</p>
+    <p><a href="https://ronenaviram.github.io/social-impact-tracker/dashboard.html" target="_blank">צפייה בדשבורד &larr;</a></p>
+  </div>
+</div>
+
+<!-- Meta bar -->
+<div class="meta-bar">
+  <div><strong>תוקף ההצעה:</strong> 7 ימים מתאריך ההפקה</div>
+  <div><strong>תאריך הפקה:</strong> 27.07.2026</div>
+</div>
+
+<!-- Section 1: Project Scope -->
+<div class="section">
+  <div class="section-title"><span class="section-number">1</span> תכולת הפרויקט</div>
+  <ul class="items">
+    <li><strong>תשתית מערכת</strong> — מערכת לאחסון וניהול כלל הנתונים</li>
+    <li><strong>טופס הזנת נתונים</strong> — תמיכה בפלטפורמות מרובות וכמה תכנים לכל פלטפורמה</li>
+    <li><strong>דשבורד אינטראקטיבי</strong> — גרפים, פילטרים (פלטפורמה + ארגון), ארכיון לינקים</li>
+    <li><strong>פאנל ניהול</strong> — פתיחה וסגירת נושאים תקופתיים, ניהול שמות וארגונים, עריכה ומחיקת נתונים</li>
+    <li><strong>פריסה ואחסון</strong> — אפס עלויות שוטפות לארגון</li>
+    <li><strong>מערכת לתפעול עצמאי</strong> — המערכת מתוכננת כך שהארגון יוכל לתפעל אותה באופן עצמאי</li>
+    <li><strong>ליווי השקה פנימית</strong> — תמיכה וליווי בהשקה הפנימית של המערכת בארגון</li>
+  </ul>
+</div>
+
+<!-- Section 2: Kickoff -->
+<div class="section">
+  <div class="section-title"><span class="section-number">2</span> שלבי הפרויקט</div>
+  <table style="width:100%; border-collapse:collapse; font-size:13px; margin-top:4px;">
+    <thead>
+      <tr style="background:#f2f8f4; font-weight:600;">
+        <td style="padding:8px 12px; border:1px solid #ddd; width:40px; text-align:center;">שלב</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">תיאור</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">תוצר</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; width:110px; text-align:center;">תאריך</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; font-weight:600; color:#1a5c3a;">1</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;"><strong>פגישת אפיון</strong> (פגישה אחת)</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">מסמך אפיון + טיימליין מוסכם</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; color:#888;">ייקבע</td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; font-weight:600; color:#1a5c3a;">2</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;"><strong>פיתוח</strong> (סל שעות פיתוח)</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">עדכוני התקדמות</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; color:#888;">ייקבע</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; font-weight:600; color:#1a5c3a;">3</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;"><strong>הצגת תוצר ראשוני</strong> (פגישה אחת)</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">גרסה ראשונה פעילה לצפייה</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; color:#888;">ייקבע</td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; font-weight:600; color:#1a5c3a;">4</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;"><strong>פידבק ותיקונים</strong> (כחלק מסל השעות)</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">גרסה מעודכנת לפי הערות</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; color:#888;">ייקבע</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; font-weight:600; color:#1a5c3a;">5</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;"><strong>הצגת תוצר סופי</strong> (פגישה אחת)</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">מערכת מוגמרת + מארז הדרכה</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; color:#888;">ייקבע</td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; font-weight:600; color:#1a5c3a;">6</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;"><strong>שבוע השקה</strong> (תמיכה בזמינות ובזמנים שיסוכמו מראש)</td>
+        <td style="padding:8px 12px; border:1px solid #ddd;">תמיכה טכנית + הדרכה אישית</td>
+        <td style="padding:8px 12px; border:1px solid #ddd; text-align:center; color:#888;">ייקבע</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11.5px; color:#888; margin-top:6px;">* התאריכים המדויקים ייקבעו בפגישת האפיון</p>
+  <p style="font-size:11.5px; color:#888; margin-top:2px;">* הפרויקט כולל עד 15 שעות עבודה בסה"כ, כולל פגישות, פיתוח ותמיכה</p>
+</div>
+
+<!-- Section 3: Training -->
+<div class="section">
+  <div class="section-title"><span class="section-number">3</span> מארז הדרכה</div>
+  <ul class="items">
+    <li><strong>הדרכה אישית</strong> — הדרכה למנהלת המערכת על תפעול מלא</li>
+    <li><strong>מארז הדרכה</strong> — חומרי הדרכה לתפעול שוטף של המערכת</li>
+    <li><strong>תמיכה לאחר השקה</strong> — שבוע תמיכה טכנית לאחר העלייה לאוויר</li>
+  </ul>
+</div>
+
+<!-- Section 4: Requirements -->
+<div class="section">
+  <div class="section-title"><span class="section-number">4</span> דרישות מהארגון</div>
+  <ul class="items">
+    <li><strong>חשבון GitHub</strong> (חינם) — לאחסון ופריסת המערכת</li>
+
+  </ul>
+</div>
+
+<!-- Section 5: Additional Services -->
+<div class="section">
+  <div class="section-title"><span class="section-number">5</span> שירותים נוספים</div>
+  <ul class="items">
+    <li>שירותי פיתוח, ייעוץ ותמיכה נוספים — בהתאם לצורך ובתיאום מראש</li>
+  </ul>
+</div>
+
+<!-- Section 6: Not Included -->
+<div class="section">
+  <div class="section-title"><span class="section-number">6</span> מה לא כלול בהצעה</div>
+  <ul class="items">
+    <li>תחזוקה שוטפת לאחר תקופת ההשקה</li>
+    <li>שינויים מבניים לאחר המסירה</li>
+    <li>עיצוב גרפי (לוגו, מיתוג)</li>
+  </ul>
+</div>
+
+<!-- Price -->
+<div class="price-box">
+  <div>
+    <div class="label">סה"כ לתשלום</div>
+    <div class="vat-note">ללא מע"מ — עוסק פטור</div>
+  </div>
+  <div style="text-align: left;">
+    <div class="amount">4,000 &#8362;</div>
+  </div>
+</div>
+
+<!-- Section 7: Terms -->
+<div class="section">
+  <div class="section-title"><span class="section-number">7</span> תנאים</div>
+  <div class="terms-grid">
+    <div class="term"><span class="term-label">תשלום:</span> <span>בין 1 ל-10 בנובמבר 2026</span></div>
+    <div class="term"><span class="term-label">תוקף ההצעה:</span> <span>7 ימים מתאריך ההפקה</span></div>
+    <div class="term"><span class="term-label">בעלות:</span> <span>הקוד עובר לבעלות הארגון לאחר המסירה</span></div>
+    <div class="term"><span class="term-label">תנאי אישור:</span> <span>ההצעה מותנית באישור הלקוח בכתב</span></div>
+  </div>
+</div>
+
+<!-- Signatures -->
+<div class="signatures">
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div class="sig-label">רונן אבירם — נותן השירות</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div class="sig-label">קווים אדומים — הלקוח</div>
+  </div>
+</div>
+
+<!-- Binding note -->
+<div class="binding-note">
+  הצעה זו מהווה מסמך מחייב לאחר אישור הלקוח בכתב. אישור ההצעה מהווה הסכמה לכל התנאים המפורטים לעיל.
+</div>
+
+</body>
+</html>

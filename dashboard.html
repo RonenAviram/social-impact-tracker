@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קווים אדומים | דשבורד</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--blue-50:#E6F1FB;--blue-100:#B5D4F4;--blue-200:#85B7EB;--blue-400:#378ADD;--blue-600:#185FA5;--blue-800:#0C447C;--blue-900:#042C53;
+--teal-50:#E1F5EE;--teal-100:#9FE1CB;--teal-200:#5DCAA5;--teal-400:#1D9E75;--teal-600:#0F6E56;--teal-800:#085041;
+--coral-400:#D85A30;--coral-600:#993C1D;
+--amber-400:#EF9F27;--amber-600:#854F0B;
+--green-50:#EAF3DE;--green-400:#639922;
+--purple-400:#7F77DD;--purple-600:#534AB7;
+--pink-400:#D4537E;
+--red-400:#E24B4A;
+--gray-50:#F8F9FA;--gray-100:#F1F3F5;--gray-200:#E9ECEF;--gray-300:#DEE2E6;--gray-400:#ADB5BD;--gray-500:#868E96;--gray-600:#495057;--gray-700:#343A40;--gray-800:#212529;
+--radius:12px;--radius-sm:8px;
+}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);direction:rtl;min-height:100vh}
+
+/* Top Bar */
+.topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:50}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue-400),var(--teal-400));display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.topbar-logo svg{width:18px;height:18px;fill:#fff}
+.topbar h1{font-size:18px;font-weight:600;color:var(--blue-900)}
+.topbar .blitz-badge{background:var(--teal-50);color:var(--teal-600);font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--gray-50);padding:5px 12px 5px 5px;border-radius:20px}
+.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-400);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.user-chip .uname{font-size:13px;color:var(--gray-700);font-weight:500}
+.live-indicator{display:flex;align-items:center;gap:5px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green-400);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.live-label{font-size:11px;color:var(--gray-400)}
+.admin-toggle{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray-500);cursor:pointer;user-select:none}
+.admin-toggle input{accent-color:var(--blue-400);cursor:pointer}
+
+.main{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+
+/* Filters */
+.filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filter-label{font-size:11px;font-weight:600;color:var(--gray-400);white-space:nowrap}
+.filter-chip{padding:5px 13px;border-radius:20px;border:1.5px solid var(--gray-200);font-size:12px;cursor:pointer;background:#fff;color:var(--gray-600);transition:all .15s;font-family:inherit}
+.org-chip{padding:4px 10px;border-radius:20px;border:1.5px solid var(--gray-200);font-size:11px;cursor:pointer;background:#fff;color:var(--gray-600);transition:all .15s;font-family:inherit;white-space:nowrap}
+.filter-chip:hover,.org-chip:hover{border-color:var(--blue-200)}
+.filter-chip.active{border-color:var(--blue-400);background:var(--blue-50);color:var(--blue-800);font-weight:500}
+.org-chip.active{border-color:var(--teal-400);background:var(--teal-50);color:var(--teal-800);font-weight:500}
+
+/* Metric Cards */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:768px){.metrics-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:400px){.metrics-row{grid-template-columns:1fr}}
+.metric-card{background:#fff;border-radius:var(--radius);padding:16px 18px;border:1px solid var(--gray-200);position:relative;overflow:hidden}
+.metric-card .label{font-size:11px;color:var(--gray-500);font-weight:500;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.metric-card .value{font-size:26px;font-weight:700;color:var(--blue-900);transition:all .3s}
+.metric-card .change{font-size:11px;margin-top:3px;font-weight:500}
+.metric-card .change.up{color:var(--green-400)}
+.metric-card .accent{position:absolute;top:0;left:0;right:0;height:3px}
+
+/* Goals */
+.goals-section{background:#fff;border-radius:var(--radius);padding:18px 20px;border:1px solid var(--gray-200);margin-bottom:20px}
+.section-title{font-size:15px;font-weight:600;color:var(--blue-800);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.goal-row{margin-bottom:14px}
+.goal-row:last-child{margin-bottom:0}
+.goal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.goal-name{font-size:13px;font-weight:500;color:var(--gray-700)}
+.goal-nums{font-size:12px;color:var(--gray-500)}
+.goal-nums span{font-weight:600;color:var(--blue-800)}
+.goal-bar{height:8px;background:var(--gray-100);border-radius:4px;overflow:hidden}
+.goal-fill{height:100%;border-radius:4px;transition:width 1s ease}
+
+/* Charts */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:#fff;border-radius:var(--radius);padding:18px;border:1px solid var(--gray-200)}
+.chart-card h3{font-size:14px;font-weight:600;color:var(--blue-800);margin-bottom:2px}
+.chart-card .chart-sub{font-size:11px;color:var(--gray-400);margin-bottom:14px}
+.chart-wrap{position:relative;height:250px}
+
+/* Platform Breakdown */
+.breakdown-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+.breakdown-card{background:#fff;border-radius:var(--radius-sm);padding:14px;border:1px solid var(--gray-200);text-align:center;cursor:pointer;transition:border-color .15s}
+.breakdown-card:hover{border-color:var(--blue-200)}
+.breakdown-card.active-bk{border-color:var(--blue-400);background:var(--blue-50)}
+.bk-icon{font-size:22px;margin-bottom:3px}
+.bk-name{font-size:11px;color:var(--gray-500);margin-bottom:4px}
+.bk-val{font-size:18px;font-weight:600;color:var(--blue-800)}
+.bk-sub{font-size:10px;color:var(--gray-400)}
+
+/* Leaderboard */
+.leaderboard{background:#fff;border-radius:var(--radius);padding:18px 20px;border:1px solid var(--gray-200);margin-bottom:20px}
+.lb-filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.lb-filters .lb-sep{width:1px;height:20px;background:var(--gray-200);margin:0 4px}
+.lb-tab{padding:4px 11px;border-radius:16px;border:1.5px solid var(--gray-200);font-size:11px;cursor:pointer;background:#fff;color:var(--gray-500);font-family:inherit;transition:all .15s}
+.lb-tab.active{border-color:var(--blue-400);background:var(--blue-50);color:var(--blue-800);font-weight:500}
+.lb-tab.plat-tab.active{border-color:var(--teal-400);background:var(--teal-50);color:var(--teal-800)}
+.lb-list{list-style:none}
+.lb-item{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--gray-100);gap:10px}
+.lb-item:last-child{border:none}
+.lb-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.lb-rank.gold{background:#FFF3CD;color:#856404}
+.lb-rank.silver{background:#E2E3E5;color:#495057}
+.lb-rank.bronze{background:#FFE5D0;color:#995500}
+.lb-rank.normal{background:var(--gray-100);color:var(--gray-500)}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:13px;font-weight:500;color:var(--gray-800)}
+.lb-org{font-size:10px;color:var(--gray-400)}
+.lb-val{font-size:15px;font-weight:600;color:var(--blue-800);flex-shrink:0}
+.lb-bar-wrap{width:100px;flex-shrink:0}
+.lb-bar-bg{height:5px;background:var(--gray-100);border-radius:3px;overflow:hidden}
+.lb-bar-fill{height:100%;border-radius:3px;background:var(--blue-400)}
+@media(max-width:600px){.lb-bar-wrap{display:none}}
+
+/* Admin */
+.admin-panel{background:var(--blue-50);border:1.5px solid var(--blue-200);border-radius:var(--radius);padding:18px;margin-bottom:20px;display:none}
+.admin-panel.show{display:block}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.admin-grid{grid-template-columns:1fr}}
+.admin-card{background:#fff;border-radius:var(--radius-sm);padding:14px;border:1px solid var(--blue-100)}
+.admin-card h4{font-size:13px;font-weight:600;color:var(--blue-800);margin-bottom:10px}
+.admin-field{margin-bottom:8px}
+.admin-field label{display:block;font-size:11px;color:var(--gray-500);margin-bottom:2px}
+.admin-field input,.admin-field select{width:100%;padding:7px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit}
+.admin-btn{padding:7px 14px;background:var(--blue-400);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:6px}
+
+/* Data Table */
+.data-table-wrap{background:#fff;border-radius:var(--radius);padding:18px;border:1px solid var(--gray-200);margin-bottom:20px;overflow-x:auto;display:none}
+.data-table-wrap.show{display:block}
+table.data-table{width:100%;border-collapse:collapse;font-size:12px;min-width:650px}
+table.data-table th{background:var(--gray-50);padding:8px 10px;text-align:right;font-weight:600;color:var(--gray-600);border-bottom:2px solid var(--gray-200);white-space:nowrap}
+table.data-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);color:var(--gray-700)}
+table.data-table tr:hover{background:var(--blue-50)}
+
+/* Link Archive */
+.link-item{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--gray-100);gap:10px;font-size:13px}
+.link-item:last-child{border:none}
+.link-item .li-icon{font-size:18px;flex-shrink:0}
+.link-item .li-info{flex:1;min-width:0}
+.link-item .li-name{font-weight:500;color:var(--gray-700)}
+.link-item .li-meta{font-size:11px;color:var(--gray-400)}
+.link-item .li-link{font-size:12px;color:var(--blue-600);text-decoration:none;word-break:break-all;flex:0 0 auto;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr}
+.link-item .li-link:hover{text-decoration:underline}
+.li-copy{width:30px;height:30px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .15s}
+.li-copy:hover{background:var(--blue-50);border-color:var(--blue-400)}
+.link-search{display:flex;gap:6px;margin-bottom:10px}
+.link-search input{flex:1;padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit}
+.link-search input:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.link-search input::placeholder{color:var(--gray-400)}
+.link-org-filters{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.link-org-chip{padding:3px 10px;border-radius:14px;border:1px solid var(--gray-200);font-size:11px;cursor:pointer;background:#fff;color:var(--gray-500);transition:all .15s;font-family:inherit}
+.link-org-chip:hover{border-color:var(--teal-200)}
+.link-org-chip.active{background:var(--teal-50);color:var(--teal-800);border-color:var(--teal-400);font-weight:500}
+
+/* Inline edit buttons — only visible in admin mode */
+.edit-btn{display:none;width:28px;height:28px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;cursor:pointer;align-items:center;justify-content:center;font-size:13px;transition:all .15s;position:absolute;top:10px;left:10px;z-index:5}
+.edit-btn:hover{background:var(--blue-50);border-color:var(--blue-400)}
+body.admin-mode .edit-btn{display:flex}
+body.admin-mode .goals-section{display:block!important}
+body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.admin-mode .chart-card:hover,body.admin-mode .link-item:hover{outline:2px solid var(--blue-200);outline-offset:2px;border-radius:var(--radius)}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.footer{text-align:center;padding:20px;font-size:11px;color:var(--gray-400)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-right">
+    <div class="topbar-logo" style="background:none;overflow:hidden"><img src="logo.jpg" alt="קווים אדומים" style="width:36px;height:36px;object-fit:contain"></div>
+    <h1>קווים אדומים</h1>
+    <select id="topicSelect" onchange="changeTopic()" style="padding:4px 12px;border-radius:16px;border:1.5px solid var(--teal-200);font-size:12px;font-weight:600;color:var(--teal-800);background:var(--teal-50);font-family:inherit;cursor:pointer">
+      <option value="violence-young-couples" selected>מניעת אלימות בזוגיות צעירה</option>
+    </select>
+  </div>
+  <div class="topbar-left">
+    <div class="user-chip" id="userChip" style="display:none">
+      <div class="avatar" id="userAvatar"></div>
+      <span class="uname" id="userName"></span>
+    </div>
+    <div class="live-indicator" id="statusBadge"><div class="live-dot active"></div><span class="live-label">פעיל</span></div>
+    <label class="admin-toggle"><input type="checkbox" id="adminCheck" onchange="toggleAdmin()"> מנהל</label>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="admin-panel" id="adminPanel">
+    <div class="section-title">ניהול</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <a href="admin-campaign.html" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--blue-400)">➕ קמפיין חדש</a>
+      <a href="admin-pool.html" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--teal-400)">👥 ניהול מאגר</a>
+      <button class="admin-btn" style="background:var(--gray-600)" onclick="exportCSV()">📥 ייצוא CSV</button>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h4>הגדרת יעדים</h4>
+        <div class="admin-field"><label>יעד חשיפות כולל</label><input type="number" value="2000000"></div>
+        <div class="admin-field"><label>יעד תכנים</label><input type="number" value="150"></div>
+        <div class="admin-field"><label>יעד חשיפות ממוצעות לפוסט FB</label><input type="number" value="1000"></div>
+        <button class="admin-btn" onclick="showToast('היעדים עודכנו')">עדכון יעדים</button>
+      </div>
+      <div class="admin-card">
+        <h4>ניהול קמפיין</h4>
+        <div class="admin-field"><label>שם</label><input type="text" value="חוסן ילדי קו העימות"></div>
+        <div class="admin-field"><label>תאריך התחלה</label><input type="date" value="2026-06-15"></div>
+        <div class="admin-field"><label>תאריך סיום</label><input type="date" value="2026-06-30"></div>
+        <div class="admin-field"><label>סטטוס</label><select id="campStatusSelect" onchange="updateCampStatus()"><option value="active">פעיל</option><option value="paused">מושהה</option><option value="ended">הסתיים</option></select></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Filters (multi-select) -->
+  <div class="filters">
+    <div class="filter-label">פלטפורמה:</div>
+    <button class="filter-chip active" data-filter="all" onclick="togglePlatformFilter(this)">הכל</button>
+    <button class="filter-chip" data-filter="facebook" onclick="togglePlatformFilter(this)">📘 פייסבוק</button>
+    <button class="filter-chip" data-filter="instagram" onclick="togglePlatformFilter(this)">📸 אינסטגרם</button>
+    <button class="filter-chip" data-filter="tiktok" onclick="togglePlatformFilter(this)">🎵 טיקטוק</button>
+    <button class="filter-chip" data-filter="twitter" onclick="togglePlatformFilter(this)">𝕏 טוויטר</button>
+    <button class="filter-chip" data-filter="linkedin" onclick="togglePlatformFilter(this)">💼 לינקדאין</button>
+    <button class="filter-chip" data-filter="spotify" onclick="togglePlatformFilter(this)">🎧 ספוטיפיי</button>
+    <button class="filter-chip" data-filter="youtube" onclick="togglePlatformFilter(this)">▶️ יוטיוב</button>
+    <button class="filter-chip" data-filter="email" onclick="togglePlatformFilter(this)">📧 ניוזלטר</button>
+    <button class="filter-chip" data-filter="newspaper" onclick="togglePlatformFilter(this)">📰 עיתון</button>
+    <button class="filter-chip" data-filter="website" onclick="togglePlatformFilter(this)">🌐 אתר</button>
+    <button class="filter-chip" data-filter="whatsapp" onclick="togglePlatformFilter(this)">💬 וואטסאפ</button>
+  </div>
+  <div class="filters" style="margin-top:-12px;gap:5px;flex-wrap:nowrap;overflow-x:auto">
+    <div class="filter-label">ארגון:</div>
+    <button class="org-chip active" data-org="all" onclick="toggleOrgFilter(this)">הכל</button>
+    <button class="org-chip" data-org="ויצו" onclick="toggleOrgFilter(this)">ויצו</button>
+    <button class="org-chip" data-org="נעמת" onclick="toggleOrgFilter(this)">נעמת</button>
+    <button class="org-chip" data-org="דלת פתוחה" onclick="toggleOrgFilter(this)">דלת פתוחה</button>
+    <button class="org-chip" data-org="לדעת לבחור נכון" onclick="toggleOrgFilter(this)">לדעת לבחור נכון</button>
+    <button class="org-chip" data-org="איגוד העובדים הסוציאליים" onclick="toggleOrgFilter(this)">איגוד העו״ס</button>
+    <button class="org-chip" data-org="לתת פה" onclick="toggleOrgFilter(this)">לתת פה</button>
+    <button class="org-chip" data-org="לא לאלימות" onclick="toggleOrgFilter(this)">לא לאלימות</button>
+    <button class="org-chip" data-org="קווים אדומים" onclick="toggleOrgFilter(this)">קווים אדומים</button>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card"><div class="accent" style="background:var(--blue-400)"></div><div class="label">חשיפות כוללות</div><div class="value" id="totalReach">—</div><div class="change up" id="changeReach"></div></div>
+    <div class="metric-card"><div class="accent" style="background:var(--teal-400)"></div><div class="label">אינטראקציות</div><div class="value" id="totalEng">—</div><div class="change up" id="changeEng"></div></div>
+    <div class="metric-card"><div class="accent" style="background:var(--coral-400)"></div><div class="label">תכנים</div><div class="value" id="totalContent">—</div><div class="change up" id="changeContent"></div></div>
+    <div class="metric-card"><div class="accent" style="background:var(--purple-400)"></div><div class="label">משתתפים פעילים</div><div class="value" id="totalPeople">—</div><div class="change up" id="changePeople"></div></div>
+  </div>
+
+  <!-- Goals (admin only) -->
+  <div class="goals-section" style="position:relative;display:none">
+    <button class="edit-btn" onclick="showToast('מצב עריכה: יעדים')">✏️</button>
+    <div class="section-title">יעדים</div>
+    <div id="goalsContainer"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>תכנים לפי פלטפורמה</h3>
+      <div class="chart-sub">פילוח כמות התכנים · לחצו על פלטפורמה לסינון</div>
+      <div id="activeFilterLabel" style="display:none;margin-bottom:8px;font-size:12px;font-weight:600;color:var(--blue-600);background:var(--blue-50);padding:4px 12px;border-radius:12px;cursor:pointer" onclick="clearPlatformFilter()"></div>
+      <div class="chart-wrap"><canvas id="chartPlatform"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>העלאות תוכן לאורך זמן</h3>
+      <div class="chart-sub">כמות תכנים שהועלו בכל יום · לחצו על יום לפרטים</div>
+      <div class="chart-wrap"><canvas id="chartUploads"></canvas></div>
+      <div id="dayDetail" style="display:none;margin-top:12px;padding:12px;background:var(--blue-50);border-radius:var(--radius-sm);font-size:13px"></div>
+    </div>
+    <div class="chart-card">
+      <h3 id="engChartTitle">אינטראקציות לפי סוג</h3>
+      <div class="chart-sub" id="engChartSub">מותאם לפלטפורמה שנבחרה</div>
+      <div class="chart-wrap"><canvas id="chartEngagement"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>חשיפות לאורך זמן</h3>
+      <div class="chart-sub">חשיפות יומיות מצטברות</div>
+      <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Filter Status: Platform -->
+  <div class="section-title" style="margin-bottom:10px">פילטר פלטפורמה</div>
+  <div class="breakdown-grid" id="breakdownGrid"></div>
+
+  <!-- Filter Status: Org -->
+  <div class="section-title" style="margin-bottom:10px;margin-top:20px">פילטר ארגון</div>
+  <div class="breakdown-grid" id="orgBreakdownGrid"></div>
+
+  <!-- Link Archive -->
+  <div class="leaderboard" id="linkArchive" style="position:relative">
+    <button class="edit-btn" onclick="showToast('מצב עריכה: ארכיון קישורים')">✏️</button>
+    <div class="section-title">📎 ארכיון קישורים</div>
+    <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">כל התכנים שהועלו — חפשו, סננו והעתיקו קישורים לשיתוף</div>
+    <div class="link-search">
+      <input type="text" id="linkSearchInput" placeholder="חיפוש לפי שם, ארגון או סוג תוכן..." oninput="renderLinkArchive()">
+    </div>
+    <div id="linkFilters" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <button class="lb-tab active" data-linkfilter="all" onclick="setLinkFilter(this)">הכל</button>
+    </div>
+    <div class="link-org-filters" id="linkOrgFilters"></div>
+    <div id="linkList" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+
+
+  <!-- Admin Data Table -->
+  <div class="data-table-wrap" id="dataTable">
+    <div class="section-title">נתונים גולמיים</div>
+    <table class="data-table">
+      <thead><tr><th>תאריך</th><th>שם</th><th>ארגון</th><th>פלטפורמה</th><th>סוג</th><th>חשיפות</th><th>לייקים</th><th>תגובות</th><th>שיתופים</th></tr></thead>
+      <tbody id="rawData"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">קווים אדומים © 2026 | דשבורד חברתי</div>
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+// =================== DATA (from config.js) ===================
+const ORGS = CONFIG.ORGS;
+const PLATFORMS = CONFIG.PLATFORMS;
+// Build TYPES lookup from config
+const TYPES = {};
+PLATFORMS.forEach(p => { TYPES[p.id] = p.types; });
+
+const FULL_NAMES = [
+  'מיכל פרינס','נועה לוינסון','יובל אדלר','דנה שמעוני','אורי ברקוביץ','שירה נחמני',
+  'רון דביר','תמר אלוני','גיל סגל','ליאור כהן','הדס מזרחי','עומר גולדשטיין',
+  'רוני בן דוד','איילת הרשקוביץ','ניר פלדמן','מאיה ויינשטיין','אדם שפירא',
+  'שני אברהמי','דניאל קפלן','יעל מורנו','עידו רוזנבלט','נטע גרינברג',
+  'איתי שטרן','ליאת פרידמן','בן זמיר','הילה ברנשטיין','אמיר חדד',
+  'סיון עמרם','דור אסולין','ענבר רפפורט','גל תורג\'מן','אפרת דקל','עמית ארד','רותם שגיא'
+];
+
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+const people = FULL_NAMES.map((name, i) => ({
+  id: i, name,
+  org: i === 0 ? 'קווים אדומים' : ORGS[i % ORGS.length]
+}));
+
+// Generate entries with richer data
+const entries = [];
+for (let day = 15; day <= 25; day++) {
+  const count = rand(6, 14);
+  for (let j = 0; j < count; j++) {
+    const person = people[rand(0, people.length - 1)];
+    const platIdx = rand(0, PLATFORMS.length - 1);
+    const plat = PLATFORMS[platIdx];
+    const types = TYPES[plat.id];
+    const type = types[rand(0, types.length - 1)];
+
+    // Generate platform-specific metrics
+    const reach = rand(200, 8000);
+    const likes = rand(10, Math.floor(reach * 0.3));
+    const comments = rand(2, Math.floor(likes * 0.4));
+    const shares = rand(0, Math.floor(likes * 0.2));
+    const saves = rand(0, Math.floor(likes * 0.15));
+    const views = rand(reach, reach * 3);
+    const retweets = rand(0, Math.floor(likes * 0.3));
+    const replies = rand(1, Math.floor(comments * 0.8) || 2);
+    const impressions = rand(reach, reach * 2);
+    const listens = rand(50, 600);
+    const new_followers = rand(0, 15);
+    const avg_listen = rand(5, 35);
+    const video_views = rand(Math.floor(reach * 0.3), reach);
+
+    const m = { likes, comments, shares, saves, views, reach, retweets, replies, impressions, listens, new_followers, avg_listen, video_views };
+
+    const sampleLinks = {
+      facebook: `https://facebook.com/post/${rand(100000,999999)}`,
+      instagram: `https://instagram.com/p/${String.fromCharCode(65+rand(0,25))}${rand(1000,9999)}`,
+      tiktok: `https://tiktok.com/@user/video/${rand(1000000,9999999)}`,
+      twitter: `https://x.com/user/status/${rand(1000000,9999999)}`,
+      linkedin: `https://linkedin.com/posts/${rand(10000,99999)}`,
+      spotify: `https://open.spotify.com/episode/${rand(100000,999999)}`,
+      youtube: `https://youtube.com/watch?v=${rand(10000,99999)}`,
+      email: `https://mailchimp.com/campaign/${rand(1000,9999)}`,
+      newspaper: '',
+      website: `https://example.org/article/${rand(100,999)}`,
+      whatsapp: ''
+    };
+    // uploadDate may differ from submission date — simulate some being uploaded 0-2 days before
+    const uploadOffset = rand(0, 2);
+    const uploadDay = Math.max(15, day - uploadOffset);
+
+    entries.push({
+      date: `2026-06-${String(day).padStart(2, '0')}`,
+      uploadDate: `2026-06-${String(uploadDay).padStart(2, '0')}`,
+      person, platform: plat.id, platformName: plat.name, type, metrics: m,
+      reach: plat.id === 'spotify' ? listens : (reach || impressions),
+      engagement: likes + comments + shares,
+      link: sampleLinks[plat.id] || `https://example.com/${rand(1000,9999)}`
+    });
+  }
+}
+
+// Boost מיכל פרינס — add extra high-performing entries for her
+for (let day = 15; day <= 25; day++) {
+  const michal = people[0]; // מיכל פרינס
+  if (rand(0, 1) === 0) continue; // ~half the days
+  const plat = PLATFORMS[rand(0, 2)]; // FB/IG/TT
+  const types = TYPES[plat.id];
+  const type = types[rand(0, types.length - 1)];
+  const reach = rand(4000, 12000);
+  const likes = rand(200, Math.floor(reach * 0.4));
+  const comments = rand(30, Math.floor(likes * 0.5));
+  const shares = rand(10, Math.floor(likes * 0.3));
+  const m = { likes, comments, shares, saves: rand(5, 40), views: rand(reach, reach * 3), reach, retweets: 0, replies: comments, impressions: reach * 2, listens: 0, new_followers: 0, avg_listen: 0, video_views: rand(reach, reach * 2) };
+  entries.push({
+    date: `2026-06-${String(day).padStart(2, '0')}`,
+    uploadDate: `2026-06-${String(day).padStart(2, '0')}`,
+    person: michal, platform: plat.id, platformName: plat.name, type, metrics: m,
+    reach, engagement: likes + comments + shares,
+    link: `https://facebook.com/michalprins/posts/${rand(100000,999999)}`
+  });
+}
+
+// =================== STATE ===================
+let campaignStatus = 'active'; // 'active' | 'paused' | 'ended'
+// Multi-select: empty set = all, otherwise set of selected IDs
+let selectedPlatforms = new Set(); // empty = all
+let selectedOrgs = new Set(); // empty = all
+
+function filtered() {
+  let d = entries;
+  if (selectedPlatforms.size > 0) d = d.filter(e => selectedPlatforms.has(e.platform));
+  if (selectedOrgs.size > 0) d = d.filter(e => selectedOrgs.has(e.person.org));
+  return d;
+}
+
+function clearPlatformFilter() {
+  selectedPlatforms.clear();
+  syncPlatformChips();
+  renderAll();
+}
+
+function togglePlatformFilter(el) {
+  const val = el.dataset.filter;
+  if (val === 'all') {
+    selectedPlatforms.clear();
+  } else {
+    if (selectedPlatforms.has(val)) {
+      selectedPlatforms.delete(val);
+    } else {
+      selectedPlatforms.add(val);
+    }
+  }
+  syncPlatformChips();
+  renderAll();
+}
+
+function toggleOrgFilter(el) {
+  const val = el.dataset.org;
+  if (val === 'all') {
+    selectedOrgs.clear();
+  } else {
+    if (selectedOrgs.has(val)) {
+      selectedOrgs.delete(val);
+    } else {
+      selectedOrgs.add(val);
+    }
+  }
+  syncOrgChips();
+  renderAll();
+}
+
+// Sync all platform filter UI across dashboard
+function syncPlatformChips() {
+  const allActive = selectedPlatforms.size === 0;
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    if (c.dataset.filter === 'all') {
+      c.classList.toggle('active', allActive);
+    } else {
+      c.classList.toggle('active', selectedPlatforms.has(c.dataset.filter));
+    }
+  });
+}
+
+// Sync all org filter UI across dashboard
+function syncOrgChips() {
+  const allActive = selectedOrgs.size === 0;
+  document.querySelectorAll('.org-chip').forEach(c => {
+    if (c.dataset.org === 'all') {
+      c.classList.toggle('active', allActive);
+    } else {
+      c.classList.toggle('active', selectedOrgs.has(c.dataset.org));
+    }
+  });
+}
+
+// Backward-compat: single platform filter for engagement chart context
+function getCurrentSinglePlatformFilter() {
+  if (selectedPlatforms.size === 1) return [...selectedPlatforms][0];
+  return 'all';
+}
+
+// =================== RENDER ===================
+let chartPlatform, chartTimeline, chartEngagement, chartUploads;
+
+function renderMetrics() {
+  const d = filtered();
+  const totalReach = d.reduce((s, e) => s + e.reach, 0);
+  const totalEng = d.reduce((s, e) => s + e.engagement, 0);
+  const unique = new Set(d.map(e => e.person.id));
+  animateValue('totalReach', totalReach);
+  animateValue('totalEng', totalEng);
+  document.getElementById('totalContent').textContent = d.length.toLocaleString();
+  document.getElementById('totalPeople').textContent = unique.size;
+  document.getElementById('changeReach').textContent = '↑ ' + Math.round(totalReach * 0.124).toLocaleString() + ' מאתמול';
+  document.getElementById('changeEng').textContent = '↑ ' + Math.round(totalEng * 0.087).toLocaleString() + ' מאתמול';
+  document.getElementById('changeContent').textContent = '↑ ' + rand(3, 8) + ' היום';
+  document.getElementById('changePeople').textContent = 'מתוך ' + people.length + ' רשומים';
+}
+
+function animateValue(id, target) {
+  document.getElementById(id).textContent = target.toLocaleString();
+}
+
+function renderGoals() {
+  const d = filtered();
+  const totalReach = d.reduce((s, e) => s + e.reach, 0);
+  const fbEntries = d.filter(e => e.platform === 'facebook');
+  const avgFbReach = fbEntries.length > 0 ? Math.round(fbEntries.reduce((s, e) => s + e.reach, 0) / fbEntries.length) : 0;
+  const unique = new Set(d.map(e => e.person.id));
+
+  const goals = [
+    { name: 'חשיפות כוללות', current: totalReach, target: 2000000 },
+    { name: 'תכנים שהועלו', current: d.length, target: 150 },
+    { name: 'חשיפות ממוצעות לפוסט FB', current: avgFbReach, target: 1000 },
+    { name: 'משתתפים פעילים', current: unique.size, target: 50 }
+  ];
+
+  const container = document.getElementById('goalsContainer');
+  container.innerHTML = '';
+  goals.forEach(g => {
+    const pct = Math.min(100, Math.round(g.current / g.target * 100));
+    const cls = pct >= 100 ? 'background:var(--teal-400)' : pct >= 50 ? 'background:var(--blue-400)' : 'background:var(--amber-400)';
+    container.innerHTML += `<div class="goal-row"><div class="goal-header"><span class="goal-name">${g.name}</span><span class="goal-nums"><span>${g.current.toLocaleString()}</span> / ${g.target.toLocaleString()}</span></div><div class="goal-bar"><div class="goal-fill" style="width:${pct}%;${cls}"></div></div></div>`;
+  });
+}
+
+function renderCharts() {
+  const d = filtered();
+
+  // Platform donut with percentages and clickable legend
+  const platCounts = {};
+  PLATFORMS.forEach(p => platCounts[p.name] = 0);
+  d.forEach(e => platCounts[e.platformName] = (platCounts[e.platformName] || 0) + 1);
+  const platLabels = Object.keys(platCounts).filter(k => platCounts[k] > 0);
+  const platData = platLabels.map(k => platCounts[k]);
+  const platTotal = platData.reduce((s, v) => s + v, 0);
+  const platColors = platLabels.map(l => PLATFORMS.find(p => p.name === l)?.color || '#aaa');
+  const platLabelsWithPct = platLabels.map((l, i) => `${l} (${Math.round(platData[i] / platTotal * 100)}%)`);
+
+  // Update active filter label
+  const filterLabel = document.getElementById('activeFilterLabel');
+  if (selectedPlatforms.size > 0) {
+    const names = [...selectedPlatforms].map(id => { const p = PLATFORMS.find(pp => pp.id === id); return p ? `${p.icon} ${p.name}` : id; });
+    filterLabel.style.display = 'inline-block';
+    filterLabel.textContent = names.join(', ') + ' ✕';
+  } else {
+    filterLabel.style.display = 'none';
+  }
+
+  if (chartPlatform) chartPlatform.destroy();
+  chartPlatform = new Chart(document.getElementById('chartPlatform'), {
+    type: 'doughnut',
+    data: { labels: platLabelsWithPct, datasets: [{ data: platData, backgroundColor: platColors, borderWidth: 2, borderColor: '#fff' }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+      plugins: {
+        legend: {
+          display: true, position: 'bottom', rtl: true,
+          labels: { font: { size: 11 }, padding: 8, usePointStyle: true, pointStyle: 'rectRounded' },
+          onClick: function(e, legendItem, legend) {
+            const clickedName = platLabels[legendItem.index];
+            const clickedPlat = PLATFORMS.find(p => p.name === clickedName);
+            if (!clickedPlat) return;
+            // Toggle: if already filtered to this, go back to all
+            if (selectedPlatforms.has(clickedPlat.id)) {
+              selectedPlatforms.delete(clickedPlat.id);
+            } else {
+              selectedPlatforms.add(clickedPlat.id);
+            }
+            syncPlatformChips();
+            renderAll();
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const pct = Math.round(ctx.parsed / platTotal * 100);
+              return `${platLabels[ctx.dataIndex]}: ${ctx.parsed} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Timeline
+  const days = {};
+  d.forEach(e => { days[e.date] = (days[e.date] || 0) + e.reach; });
+  const sortedDays = Object.keys(days).sort();
+  let cum = 0;
+  const cumData = sortedDays.map(day => { cum += days[day]; return cum; });
+  const dayLabels = sortedDays.map(d => d.slice(8) + '/6');
+
+  if (chartTimeline) chartTimeline.destroy();
+  chartTimeline = new Chart(document.getElementById('chartTimeline'), {
+    type: 'line',
+    data: { labels: dayLabels, datasets: [{ label: 'חשיפות מצטברות', data: cumData, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,.08)', fill: true, tension: .3, pointRadius: 4, pointBackgroundColor: '#378ADD' }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v } }, x: { ticks: { font: { size: 11 } } } } }
+  });
+
+  // Engagement by type — DYNAMIC based on platform filter
+  renderEngagementChart(d);
+
+  // Uploads over time chart
+  renderUploadsChart(d);
+}
+
+function renderEngagementChart(d) {
+  // Determine which engagement keys to show based on platform filter
+  let engKeys, engLabels;
+  const singlePlat = getCurrentSinglePlatformFilter();
+  if (singlePlat !== 'all') {
+    const plat = PLATFORMS.find(p => p.id === singlePlat);
+    const kl = CONFIG.getEngKeysLabels(singlePlat);
+    engKeys = kl.keys;
+    engLabels = kl.labels;
+    document.getElementById('engChartTitle').textContent = `אינטראקציות — ${plat.name}`;
+    document.getElementById('engChartSub').textContent = `נתונים ספציפיים ל${plat.name}`;
+  } else {
+    engKeys = ['likes', 'comments', 'shares', 'reach'];
+    engLabels = ['לייקים', 'תגובות', 'שיתופים', 'חשיפות'];
+    document.getElementById('engChartTitle').textContent = 'אינטראקציות לפי סוג';
+    document.getElementById('engChartSub').textContent = selectedPlatforms.size > 1 ? `${selectedPlatforms.size} פלטפורמות נבחרו` : 'כל הפלטפורמות';
+  }
+
+  const vals = engKeys.map(k => d.reduce((s, e) => s + (e.metrics[k] || 0), 0));
+  const colors = ['#378ADD', '#1D9E75', '#7F77DD', '#D85A30', '#EF9F27'];
+
+  if (chartEngagement) chartEngagement.destroy();
+  chartEngagement = new Chart(document.getElementById('chartEngagement'), {
+    type: 'bar',
+    data: { labels: engLabels, datasets: [{ data: vals, backgroundColor: colors.slice(0, vals.length), borderRadius: 6, barPercentage: .55 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v } }, x: { ticks: { font: { size: 11 }, maxRotation: 45 } } } }
+  });
+}
+
+function renderUploadsChart(d) {
+  // Count uploads per uploadDate
+  const uploadCounts = {};
+  d.forEach(e => {
+    const ud = e.uploadDate || e.date;
+    uploadCounts[ud] = (uploadCounts[ud] || 0) + 1;
+  });
+  const sortedDays = Object.keys(uploadCounts).sort();
+  const uploadData = sortedDays.map(day => uploadCounts[day]);
+  const dayLabels = sortedDays.map(d => d.slice(8) + '/' + d.slice(5,7));
+
+  if (chartUploads) chartUploads.destroy();
+  chartUploads = new Chart(document.getElementById('chartUploads'), {
+    type: 'bar',
+    data: { labels: dayLabels, datasets: [{ label: 'תכנים שהועלו', data: uploadData, backgroundColor: 'rgba(29,158,117,.7)', borderRadius: 4, barPercentage: .6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } } }, x: { ticks: { font: { size: 11 } } } },
+      onClick: function(evt, elements) {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const clickedDate = sortedDays[idx];
+          showDayDetail(clickedDate, d);
+        }
+      }
+    }
+  });
+}
+
+function showDayDetail(date, data) {
+  const dayEntries = data.filter(e => (e.uploadDate || e.date) === date);
+  const detail = document.getElementById('dayDetail');
+  if (dayEntries.length === 0) { detail.style.display = 'none'; return; }
+
+  const totalReach = dayEntries.reduce((s, e) => s + e.reach, 0);
+  const totalEng = dayEntries.reduce((s, e) => s + e.engagement, 0);
+  const uniquePeople = new Set(dayEntries.map(e => e.person.name));
+  const platBreakdown = {};
+  dayEntries.forEach(e => { platBreakdown[e.platformName] = (platBreakdown[e.platformName] || 0) + 1; });
+  const platText = Object.entries(platBreakdown).map(([k,v]) => `${k}: ${v}`).join(' · ');
+
+  const hebrewDate = date.slice(8) + '/' + date.slice(5,7);
+  detail.style.display = 'block';
+  detail.innerHTML = `<strong>📅 ${hebrewDate}</strong> — ${dayEntries.length} תכנים · ${uniquePeople.size} משתתפים<br>
+    <span style="color:var(--gray-600)">חשיפות: ${totalReach.toLocaleString()} · אינטראקציות: ${totalEng.toLocaleString()}</span><br>
+    <span style="color:var(--gray-500);font-size:11px">${platText}</span>`;
+}
+
+function renderBreakdown() {
+  // Show totals from org-filtered entries (not platform-filtered)
+  let allData = entries;
+  if (selectedOrgs.size > 0) allData = allData.filter(e => selectedOrgs.has(e.person.org));
+
+  const grid = document.getElementById('breakdownGrid');
+  grid.innerHTML = '';
+
+  // "הכל" card
+  const totalReach = allData.reduce((s, e) => s + e.reach, 0);
+  const allDiv = document.createElement('div');
+  allDiv.className = 'breakdown-card' + (selectedPlatforms.size === 0 ? ' active-bk' : '');
+  allDiv.innerHTML = `<div class="bk-icon">📊</div><div class="bk-name">הכל</div><div class="bk-val">${totalReach >= 1000 ? (totalReach / 1000).toFixed(1) + 'K' : totalReach}</div><div class="bk-sub">${allData.length} תכנים</div>`;
+  allDiv.onclick = () => { selectedPlatforms.clear(); syncPlatformChips(); renderAll(); };
+  grid.appendChild(allDiv);
+
+  PLATFORMS.forEach(p => {
+    const pd = allData.filter(e => e.platform === p.id);
+    const reach = pd.reduce((s, e) => s + e.reach, 0);
+    const div = document.createElement('div');
+    div.className = 'breakdown-card' + (selectedPlatforms.has(p.id) ? ' active-bk' : '');
+    div.innerHTML = `<div class="bk-icon">${p.icon}</div><div class="bk-name">${p.name}</div><div class="bk-val">${reach >= 1000 ? (reach / 1000).toFixed(1) + 'K' : reach}</div><div class="bk-sub">${pd.length} תכנים</div>`;
+    div.onclick = () => { if (selectedPlatforms.has(p.id)) selectedPlatforms.delete(p.id); else selectedPlatforms.add(p.id); syncPlatformChips(); renderAll(); };
+    grid.appendChild(div);
+  });
+}
+
+function renderOrgBreakdown() {
+  // Show totals from platform-filtered entries (not org-filtered)
+  let allData = entries;
+  if (selectedPlatforms.size > 0) allData = allData.filter(e => selectedPlatforms.has(e.platform));
+
+  const grid = document.getElementById('orgBreakdownGrid');
+  grid.innerHTML = '';
+
+  // "הכל" card
+  const totalReach = allData.reduce((s, e) => s + e.reach, 0);
+  const allDiv = document.createElement('div');
+  allDiv.className = 'breakdown-card' + (selectedOrgs.size === 0 ? ' active-bk' : '');
+  allDiv.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">הכל</div><div class="bk-val">${totalReach >= 1000 ? (totalReach / 1000).toFixed(1) + 'K' : totalReach}</div><div class="bk-sub">${allData.length} תכנים</div>`;
+  allDiv.onclick = () => { selectedOrgs.clear(); syncOrgChips(); renderAll(); };
+  grid.appendChild(allDiv);
+
+  ORGS.forEach(o => {
+    const od = allData.filter(e => e.person.org === o);
+    const reach = od.reduce((s, e) => s + e.reach, 0);
+    const div = document.createElement('div');
+    div.className = 'breakdown-card' + (selectedOrgs.has(o) ? ' active-bk' : '');
+    div.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">${o}</div><div class="bk-val">${reach >= 1000 ? (reach / 1000).toFixed(1) + 'K' : reach}</div><div class="bk-sub">${od.length} תכנים</div>`;
+    div.onclick = () => { if (selectedOrgs.has(o)) selectedOrgs.delete(o); else selectedOrgs.add(o); syncOrgChips(); renderAll(); };
+    grid.appendChild(div);
+  });
+}
+
+let currentLinkFilter = 'all';
+let currentLinkOrgFilter = 'all';
+
+function setLinkFilter(el) {
+  document.querySelectorAll('#linkFilters .lb-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentLinkFilter = el.dataset.linkfilter;
+  renderLinkArchive();
+}
+
+function setLinkOrgFilter(org, el) {
+  if (currentLinkOrgFilter === org) { currentLinkOrgFilter = 'all'; }
+  else { currentLinkOrgFilter = org; }
+  renderLinkArchive();
+}
+
+function copyLink(link) {
+  navigator.clipboard.writeText(link).then(() => showToast('הקישור הועתק!')).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('הקישור הועתק!');
+  });
+}
+
+function renderLinkArchive() {
+  const searchTerm = (document.getElementById('linkSearchInput')?.value || '').trim().toLowerCase();
+  let d = filtered().filter(e => e.link && e.link.trim());
+
+  // Platform filter
+  if (currentLinkFilter !== 'all') d = d.filter(e => e.platform === currentLinkFilter);
+
+  // Org filter
+  if (currentLinkOrgFilter !== 'all') d = d.filter(e => e.person.org === currentLinkOrgFilter);
+
+  // Text search
+  if (searchTerm) {
+    d = d.filter(e =>
+      e.person.name.toLowerCase().includes(searchTerm) ||
+      e.person.org.toLowerCase().includes(searchTerm) ||
+      e.type.toLowerCase().includes(searchTerm) ||
+      (e.platformName || '').toLowerCase().includes(searchTerm)
+    );
+  }
+
+  // Build platform filter tabs
+  const filtersContainer = document.getElementById('linkFilters');
+  const allWithLinks = filtered().filter(e => e.link && e.link.trim());
+  const platIds = [...new Set(allWithLinks.map(e => e.platform))];
+  filtersContainer.innerHTML = `<button class="lb-tab${currentLinkFilter === 'all' ? ' active' : ''}" data-linkfilter="all" onclick="setLinkFilter(this)">הכל (${allWithLinks.length})</button>`;
+  platIds.forEach(pid => {
+    const plat = PLATFORMS.find(p => p.id === pid);
+    if (!plat) return;
+    const count = allWithLinks.filter(e => e.platform === pid).length;
+    filtersContainer.innerHTML += `<button class="lb-tab${currentLinkFilter === pid ? ' active' : ''}" data-linkfilter="${pid}" onclick="setLinkFilter(this)">${plat.icon} ${plat.name} (${count})</button>`;
+  });
+
+  // Build org filter chips
+  const orgFilters = document.getElementById('linkOrgFilters');
+  const orgIds = [...new Set(allWithLinks.map(e => e.person.org))];
+  orgFilters.innerHTML = orgIds.map(org =>
+    `<button class="link-org-chip${currentLinkOrgFilter === org ? ' active' : ''}" data-org="${org.replace(/"/g,'&quot;')}" onclick="setLinkOrgFilter(this.dataset.org,this)">${org}</button>`
+  ).join('');
+
+  // Sort by date descending
+  d.sort((a, b) => b.date.localeCompare(a.date));
+
+  const list = document.getElementById('linkList');
+  list.innerHTML = '';
+  d.slice(0, 50).forEach(e => {
+    const plat = PLATFORMS.find(p => p.id === e.platform);
+    const div = document.createElement('div');
+    div.className = 'link-item';
+    const hebrewDate = e.date.slice(8) + '/' + e.date.slice(5,7);
+    div.innerHTML = `<span class="li-icon">${plat ? plat.icon : '📄'}</span>
+      <div class="li-info"><div class="li-name">${e.person.name}</div><div class="li-meta">${e.person.org} · ${e.type} · ${hebrewDate}</div></div>
+      <a class="li-link" href="${e.link}" target="_blank" rel="noopener">${e.link}</a>
+      <button class="li-copy" data-link="${e.link.replace(/"/g,'&quot;')}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`;
+    list.appendChild(div);
+  });
+
+  if (d.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px">אין קישורים להצגה</div>';
+  }
+}
+
+function renderRawData() {
+  const d = filtered().slice().reverse().slice(0, 50);
+  const tbody = document.getElementById('rawData');
+  tbody.innerHTML = '';
+  d.forEach(e => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${e.date.slice(5)}</td><td>${e.person.name}</td><td>${e.person.org}</td><td>${e.platformName}</td><td>${e.type}</td><td>${e.reach.toLocaleString()}</td><td>${(e.metrics.likes || 0).toLocaleString()}</td><td>${(e.metrics.comments || 0).toLocaleString()}</td><td>${(e.metrics.shares || 0).toLocaleString()}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAll() {
+  renderMetrics();
+  renderGoals();
+  renderCharts();
+  renderBreakdown();
+  renderOrgBreakdown();
+  renderLinkArchive();
+  renderRawData();
+}
+
+function toggleAdmin() {
+  const cb = document.getElementById('adminCheck');
+  if (cb.checked) {
+    const pass = prompt('הזיני סיסמת מנהל:');
+    if (pass !== 'nadav') {
+      cb.checked = false;
+      showToast('סיסמה שגויה');
+      return;
+    }
+  }
+  const show = cb.checked;
+  document.getElementById('adminPanel').classList.toggle('show', show);
+  document.getElementById('dataTable').classList.toggle('show', show);
+  document.body.classList.toggle('admin-mode', show);
+}
+
+function updateCampStatus() {
+  campaignStatus = document.getElementById('campStatusSelect').value;
+  const badge = document.getElementById('statusBadge');
+  const dot = badge.querySelector('.live-dot');
+  const label = badge.querySelector('.live-label');
+  dot.className = 'live-dot';
+  if (campaignStatus === 'active') { dot.classList.add('active'); dot.style.background = 'var(--green-400)'; label.textContent = 'פעיל'; }
+  else if (campaignStatus === 'paused') { dot.style.background = 'var(--amber-400)'; label.textContent = 'מושהה'; }
+  else { dot.style.background = 'var(--gray-400)'; label.textContent = 'הסתיים'; }
+  // Show/hide campaign-ended banner
+  let banner = document.getElementById('campStatusBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'campStatusBanner';
+    banner.style.cssText = 'text-align:center;padding:10px;font-size:14px;font-weight:600;display:none';
+    document.querySelector('.main').prepend(banner);
+  }
+  if (campaignStatus === 'ended') {
+    banner.textContent = 'הקמפיין הסתיים — הנתונים מוצגים לצפייה בלבד';
+    banner.style.background = '#f5f5f5'; banner.style.color = '#888'; banner.style.display = 'block';
+  } else if (campaignStatus === 'paused') {
+    banner.textContent = 'הקמפיין מושהה';
+    banner.style.background = '#fff8e1'; banner.style.color = '#f59e0b'; banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+  showToast('סטטוס עודכן: ' + label.textContent);
+}
+
+function exportCSV() {
+  const d = filtered();
+  let csv = 'תאריך,שם,ארגון,פלטפורמה,סוג,חשיפות,לייקים,תגובות,שיתופים,קישור\n';
+  d.forEach(e => {
+    csv += `${e.date},${e.person.name},${e.person.org},${e.platformName},${e.type},${e.reach},${e.metrics.likes||0},${e.metrics.comments||0},${e.metrics.shares||0},${e.link||''}\n`;
+  });
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'נתוני_קמפיין.csv';
+  a.click();
+  showToast('הקובץ הורד');
+}
+
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// === LIVE SIMULATION — gentle, no full re-render ===
+let liveTimer = null;
+function startLiveUpdates() {
+  liveTimer = setInterval(() => {
+    const person = people[rand(0, people.length - 1)];
+    const platIdx = rand(0, PLATFORMS.length - 1);
+    const plat = PLATFORMS[platIdx];
+    const types = TYPES[plat.id];
+    const type = types[rand(0, types.length - 1)];
+    const reach = rand(200, 5000);
+    const likes = rand(10, Math.floor(reach * 0.25));
+    const comments = rand(2, Math.floor(likes * 0.3));
+    const shares = rand(0, Math.floor(likes * 0.15));
+    const m = { likes, comments, shares, saves: rand(0, 10), views: rand(reach, reach * 2), reach, retweets: 0, replies: comments, impressions: reach * 2, listens: rand(30, 200), new_followers: rand(0, 5), avg_listen: rand(5, 25), video_views: rand(reach * 0.3, reach) };
+
+    entries.push({
+      date: '2026-06-25', uploadDate: '2026-06-25', person, platform: plat.id, platformName: plat.name, type, metrics: m,
+      reach: plat.id === 'spotify' ? m.listens : reach,
+      engagement: likes + comments + shares,
+      link: `https://${plat.id}.com/live/${rand(10000,99999)}`
+    });
+
+    // Only update metrics cards — no full chart re-render to avoid flicker
+    renderMetrics();
+  }, 15000);
+}
+
+// Topic switcher — currently single topic, ready for expansion
+function changeTopic() {
+  // When more topics are added, regenerate data here
+  renderAll();
+}
+
+// Initial
+renderAll();
+startLiveUpdates();
+</script>
+</body>
+</html>

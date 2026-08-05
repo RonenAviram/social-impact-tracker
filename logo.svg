@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" dir="rtl">
+  <style>
+    text { font-family: 'Arial Black', 'Segoe UI', sans-serif; fill: #1a1a1a; }
+  </style>
+  <!-- Top subtitle -->
+  <text x="100" y="18" text-anchor="middle" font-size="9" font-weight="600" fill="#333">השותפות למניעת</text>
+  <text x="100" y="28" text-anchor="middle" font-size="9" font-weight="600" fill="#333">אלימות בזוגיות</text>
+  <!-- Main text קווים -->
+  <text x="100" y="68" text-anchor="middle" font-size="42" font-weight="900" letter-spacing="2">קווים</text>
+  <!-- Red lines (part of the ו characters) -->
+  <rect x="95" y="38" width="3" height="35" fill="#CC0000" rx="0.5"/>
+  <rect x="101" y="38" width="3" height="35" fill="#CC0000" rx="0.5"/>
+  <rect x="107" y="38" width="3" height="35" fill="#CC0000" rx="0.5"/>
+  <!-- Bottom text אדומים -->
+  <text x="100" y="108" text-anchor="middle" font-size="42" font-weight="900" letter-spacing="2">אדומים</text>
+</svg>

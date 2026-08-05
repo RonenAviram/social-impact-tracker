@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מסמך אפיון — קווים אדומים</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--blue:#185FA5;--blue-light:#E6F1FB;--blue-mid:#B5D4F4;
+--teal:#0F6E56;--teal-light:#E1F5EE;
+--gray:#495057;--gray-light:#F1F3F5;--gray-mid:#DEE2E6;
+--dark:#212529;--white:#fff;
+--radius:10px;
+}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f8f9fa;color:var(--dark);direction:rtl;padding:0;margin:0}
+.page{max-width:900px;margin:0 auto;padding:30px 24px 60px}
+
+/* Header */
+.doc-header{text-align:center;margin-bottom:32px;padding-bottom:20px;border-bottom:3px solid var(--blue)}
+.doc-header h1{font-size:28px;color:var(--blue);margin-bottom:6px}
+.doc-header .subtitle{font-size:18px;color:var(--gray);margin-bottom:12px}
+.doc-header .date-line{font-size:14px;color:var(--gray)}
+.doc-header .date-line input{border:none;border-bottom:1.5px solid var(--gray-mid);font-size:14px;font-family:inherit;padding:2px 8px;width:160px;text-align:center;background:transparent;color:var(--dark)}
+.doc-header .instructions{margin-top:16px;padding:10px 16px;background:var(--teal-light);border-radius:var(--radius);font-size:13px;color:var(--teal);display:inline-block}
+
+/* Section */
+.section{margin-bottom:28px}
+.section-header{background:var(--blue-light);border-right:4px solid var(--blue);padding:14px 18px;border-radius:0 var(--radius) var(--radius) 0;margin-bottom:2px}
+.section-header h2{font-size:18px;color:var(--blue);margin-bottom:3px}
+.section-header .section-sub{font-size:13px;color:var(--gray)}
+
+.context-note{background:var(--teal-light);padding:10px 16px;font-size:13px;color:var(--teal);margin-bottom:2px;border-right:4px solid transparent}
+
+/* Question */
+.question{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--gray-mid);min-height:80px}
+.question:last-child{border-bottom:none}
+.q-left{padding:12px 16px;background:var(--white)}
+.q-right{padding:12px 16px;background:var(--gray-light)}
+.q-num{font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px}
+.q-text{font-size:14px;font-weight:600;color:var(--dark);line-height:1.5;margin-bottom:4px}
+.q-hint{font-size:12px;color:var(--gray);line-height:1.5;font-style:italic}
+.q-answer{width:100%;min-height:50px;border:none;background:transparent;font-size:14px;font-family:inherit;color:var(--dark);resize:vertical;line-height:1.5;direction:rtl}
+.q-answer:focus{outline:none;background:rgba(55,138,221,.05)}
+.q-answer::placeholder{color:#adb5bd;font-size:13px}
+
+/* Print */
+@media print{
+  body{background:#fff;padding:0}
+  .page{padding:20px;max-width:100%}
+  .no-print{display:none}
+  .question{page-break-inside:avoid}
+  .section{page-break-inside:avoid}
+  .q-answer{border:1px solid #eee}
+}
+
+/* Mobile */
+@media(max-width:600px){
+  .question{grid-template-columns:1fr;min-height:auto}
+  .q-left{border-bottom:1px solid var(--gray-mid)}
+  .page{padding:16px 12px 40px}
+}
+
+/* Actions bar */
+.actions{position:sticky;top:0;background:var(--white);border-bottom:1px solid var(--gray-mid);padding:8px 16px;display:flex;gap:10px;align-items:center;justify-content:center;z-index:10}
+.actions button{padding:8px 18px;border-radius:6px;border:1.5px solid var(--blue);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--white);color:var(--blue);transition:all .15s}
+.actions button:hover{background:var(--blue);color:var(--white)}
+.actions .save-status{font-size:12px;color:var(--gray);margin-right:auto}
+
+/* Quick links bar */
+.quick-links{background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:var(--radius);padding:18px 22px;margin-bottom:28px;color:#fff}
+.quick-links h3{font-size:16px;font-weight:600;margin-bottom:12px;color:#fff}
+.links-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.link-card{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.15);border-radius:8px;text-decoration:none;color:#fff;transition:all .2s;border:1px solid rgba(255,255,255,.2)}
+.link-card:hover{background:rgba(255,255,255,.28);transform:translateY(-1px)}
+.link-card .lc-icon{font-size:22px;flex-shrink:0}
+.link-card .lc-title{font-size:13px;font-weight:600}
+.link-card .lc-sub{font-size:11px;opacity:.8}
+@media print{.quick-links{display:none}}
+</style>
+</head>
+<body>
+
+<div class="actions no-print">
+  <button onclick="window.print()">הדפס / שמור PDF</button>
+  <button onclick="exportText()">העתק תשובות כטקסט</button>
+  <span class="save-status">התשובות נשמרות אוטומטית בדפדפן</span>
+</div>
+
+<div class="page">
+  <div class="doc-header">
+    <h1>קווים אדומים — מסמך אפיון</h1>
+    <div class="subtitle">פגישה עם מיכל פרינס</div>
+    <div class="date-line">תאריך: <input type="date" id="meetingDate"></div>
+    <div class="instructions">מלא את העמודה הימנית תוך כדי הפגישה. בסיום — העתק או שלח את המסמך לבנייה.</div>
+  </div>
+
+  <div class="quick-links no-print">
+    <h3>קישורים מהירים לפגישה</h3>
+    <div class="links-grid">
+      <a class="link-card" href="https://ronenaviram.github.io/social-impact-tracker/form.html" target="_blank">
+        <span class="lc-icon">📝</span>
+        <div><div class="lc-title">טופס הזנה (דמו)</div><div class="lc-sub">form.html — הטופס שהמשתתפים ימלאו</div></div>
+      </a>
+      <a class="link-card" href="https://ronenaviram.github.io/social-impact-tracker/dashboard.html" target="_blank">
+        <span class="lc-icon">📊</span>
+        <div><div class="lc-title">דשבורד (דמו)</div><div class="lc-sub">dashboard.html — תצוגת הנתונים</div></div>
+      </a>
+      <a class="link-card" href="admin-campaign.html" target="_blank">
+        <span class="lc-icon">⚙️</span>
+        <div><div class="lc-title">מסך בניית קמפיין</div><div class="lc-sub">admin-campaign.html — ממשק ניהול</div></div>
+      </a>
+      <a class="link-card" href="admin-pool.html" target="_blank">
+        <span class="lc-icon">👥</span>
+        <div><div class="lc-title">ניהול מאגר</div><div class="lc-sub">admin-pool.html — אנשים וארגונים</div></div>
+      </a>
+      <a class="link-card" href="הצעת_מחיר_קווים_אדומים.html" target="_blank">
+        <span class="lc-icon">💰</span>
+        <div><div class="lc-title">הצעת מחיר</div><div class="lc-sub">ההצעה שאושרה</div></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ============ A: STRATEGY ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>א. אסטרטגיה — הזנת נתונים</h2>
+      <div class="section-sub">שאלות יסוד שמשפיעות על כל המערכת</div>
+    </div>
+    <div class="context-note">השאלה המרכזית: מתי מזינים נתונים? התשובה משפיעה על כמה עבודה מיכל עושה, על מבנה הדשבורד, ועל מה שהמערכת צריכה לתמוך.</div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">1</div>
+        <div class="q-text">מתי מזינים את הנתונים?</div>
+        <div class="q-hint">אפשרויות: (א) כל משתתף מזין בעצמו לאורך הנושא, (ב) מיכל אוספת מכולם ומזינה בסוף, (ג) שילוב. שים לב: אם מזינים לאורך הנושא, האנגייג'מנט משתנה כל יום — עבודה כפולה.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="1" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">2</div>
+        <div class="q-text">אם כל אחד מזין בעצמו — מתי? יום אחרון? אחרי סיום הנושא?</div>
+        <div class="q-hint">אולי עדיף "חלון הזנה" — למשל 3 ימים אחרי סיום הנושא, כשהמספרים כבר יציבים.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="2" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">3</div>
+        <div class="q-text">מיכל צריכה לראות את הדשבורד מתעדכן "חי" תוך כדי הנושא, או רק סיכום בסוף?</div>
+        <div class="q-hint">אם רק סיכום — הכל פשוט יותר. אם חי — צריך להתמודד עם נתונים שמשתנים.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="3" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">4</div>
+        <div class="q-text">האם משתתף יכול לעדכן הזנה שכבר שלח? או רק מיכל (אדמין)?</div>
+        <div class="q-hint">רלוונטי אם מישהו הזין מספרים שגויים.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="4" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">4א</div>
+        <div class="q-text">איך המשתתפים מדווחים — ישירות דרך הטופס במערכת, או דרך Google Forms שמיכל שולחת?</div>
+        <div class="q-hint">אפשרות א: כל משתתף מקבל לינק לטופס במערכת וממלא ישירות. אפשרות ב: מיכל שולחת Google Forms, אוספת בטבלה, ומסנכרנת למערכת בלחיצה. אפשרות ב נותנת יותר שליטה למיכל אבל דורשת ממנה עבודה נוספת.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="4a" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ B: FORM ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ב. טופס הזנת נתונים — User Flow</h2>
+      <div class="section-sub">מה קורה מהרגע שמישהו פותח את הלינק</div>
+    </div>
+    <div class="context-note">היום בדמו: המזין רואה שם קבוע (מיכל פרינס). בפרודקשן צריך מנגנון זיהוי.</div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">5</div>
+        <div class="q-text">איך המזין מזדהה?</div>
+        <div class="q-hint">(א) dropdown סגור — בוחר שם מרשימה שמיכל הגדירה מראש, (ב) לינק אישי לכל משתתף, (ג) אחר. ללא לוגין/סיסמה.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="5" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">6</div>
+        <div class="q-text">מיכל מגדירה מראש רשימת שמות+ארגונים — מספיק? או שמשתתפים צריכים יכולת להוסיף את עצמם?</div>
+        <div class="q-hint">dropdown סגור = שליטה על נתונים. אבל מי שלא ברשימה לא יכול להזין.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="6" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">7</div>
+        <div class="q-text">שדה קישור — חובה? מה עם וואטסאפ / עיתון מודפס (אין URL)?</div>
+        <div class="q-hint">היום קישור מסומן כחובה לכל פלטפורמה.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="7" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">8</div>
+        <div class="q-text">שדה "תאריך העלאה" — חשוב? או שמספיק תאריך ההזנה?</div>
+        <div class="q-hint">שני תאריכים: מתי התוכן עלה לרשת, ומתי מישהו הזין אותו במערכת. אם מזינים בסוף — תאריך ההעלאה חשוב.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="8" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">9</div>
+        <div class="q-text">כל המטריקות בטופס רלוונטיות? יש מיותרות?</div>
+        <div class="q-hint">למשל: ספוטיפיי — "דקות האזנה ממוצעות", וואטסאפ — "קבוצות ששותפו". לעבור על הרשימה.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="9" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">10</div>
+        <div class="q-text">11 הפלטפורמות — מספיק? חסר? מיותר?</div>
+        <div class="q-hint">פייסבוק, אינסטגרם, טיקטוק, X, לינקדאין, ספוטיפיי, יוטיוב, רשימת תפוצה, עיתון מודפס, אתר אינטרנט, וואטסאפ.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="10" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ C: TOPICS ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ג. ניהול נושאים</h2>
+      <div class="section-sub">הנושאים התקופתיים שסביבם מתרכז התוכן</div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">11</div>
+        <div class="q-text">כמה נושאים צפויים בשנה? מה משך ממוצע?</div>
+        <div class="q-hint">משפיע על איך הדשבורד מציג היסטוריה.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="11" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">12</div>
+        <div class="q-text">מה קורה כשנושא נגמר? דשבורד מתאפס? ארכיון? השוואה בין נושאים?</div>
+        <div class="q-hint">(א) רק הנושא הפעיל, (ב) דרופדאון לנושאים ישנים, (ג) גרף השוואה.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="12" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">13</div>
+        <div class="q-text">יכולים לרוץ שני נושאים במקביל?</div>
+        <div class="q-hint">אם כן — ממשק שונה. אם לא — פשוט יותר.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="13" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">14</div>
+        <div class="q-text">מי פותח נושא חדש? רק מיכל? דרך ממשק האדמין?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="14" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ D: DASHBOARD ELEMENTS ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ד. דשבורד — אלמנט אלמנט</h2>
+      <div class="section-sub">נעבור על כל חלק במסך. מומלץ לפתוח את הדמו במקביל.</div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">15</div>
+        <div class="q-text">משאבים משותפים (קישור + דף מסרים) — מה זה? מי מעדכן? נשאיר?</div>
+        <div class="q-hint">מופיע למעלה בדשבורד. אם לא בשימוש — להוריד.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="15" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">16</div>
+        <div class="q-text">כרטיסי מטריקות (חשיפות, Engagement, תכנים, משתתפים) — זה מה שצריך לראות ראשון?</div>
+        <div class="q-hint">אפשר לשנות, להוסיף, להוריד.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="16" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">17</div>
+        <div class="q-text">האם בכלל צריך יעדים מספריים בדשבורד? אם כן — אילו 2-3 יעדים הכי חשובים לכם?</div>
+        <div class="q-hint">יעדים זה נייס טו האב — אפשר להוסיף אחר כך. אם כן רוצים, לדוגמה: חשיפות כוללות, מספר תכנים, מספר ארגונים פעילים. מי מגדיר? לכל קמפיין בנפרד או קבוע?</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="17" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">18</div>
+        <div class="q-text">גרף עוגה (תכנים לפי פלטפורמה) — רלוונטי?</div>
+        <div class="q-hint">מה הוא אמור לספר למיכל?</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="18" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">19</div>
+        <div class="q-text">גרף קו (חשיפות מצטברות לאורך זמן) — רלוונטי?</div>
+        <div class="q-hint">אם מזינים רק בסוף, הגרף לא ממש יראה התפתחות.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="19" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">20</div>
+        <div class="q-text">גרף Engagement לפי סוג — רלוונטי?</div>
+        <div class="q-hint">משתנה דינמית לפי פלטפורמה שנבחרה בפילטר.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="20" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">21</div>
+        <div class="q-text">גרף העלאות לאורך זמן — רלוונטי?</div>
+        <div class="q-hint">אם כולם מזינים ביום אחד, הגרף לא ממש מוסיף.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="21" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">22</div>
+        <div class="q-text">פילוח פלטפורמה (כרטיסיות חשיפות) — רלוונטי?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="22" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">23</div>
+        <div class="q-text">פילוח ארגון (כרטיסיות חשיפות לכל ארגון) — רלוונטי?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="23" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ E: FILTERS ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ה. פילטרים</h2>
+      <div class="section-sub">מה מיכל צריכה לסנן</div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">24</div>
+        <div class="q-text">פילטר פלטפורמה — מספיק כמו שזה?</div>
+        <div class="q-hint">כל 11 הפלטפורמות בשורה אחת.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="24" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">25</div>
+        <div class="q-text">פילטר ארגון — מספיק? צריך גם פילטר לפי אדם?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="25" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">26</div>
+        <div class="q-text">פילטר תאריכים — צריך?</div>
+        <div class="q-hint">שבוע ספציפי, טווח תאריכים, וכו'.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="26" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ F: LINK ARCHIVE ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ו. ארכיון קישורים</h2>
+      <div class="section-sub">כל התכנים שהועלו — לשיתוף בין ארגונים</div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">27</div>
+        <div class="q-text">הצורה הנוכחית עובדת? (רשימה עם סינון לפי פלטפורמה)</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="27" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">28</div>
+        <div class="q-text">מה המטרה העיקרית? שארגון אחד ישתף תוכן של ארגון אחר?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="28" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">29</div>
+        <div class="q-text">צריך כפתור "העתקת קישור" ליד כל פריט?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="29" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ G: LEADERBOARD ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ז. לוח מובילים</h2>
+      <div class="section-sub">החלטה פתוחה — להשאיר או להוריד</div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">30</div>
+        <div class="q-text">לוח מובילים — כן או לא?</div>
+        <div class="q-hint">יתרונות: מוטיבציה. חסרונות: תחרותיות לא רצויה, מעמיד באור שלילי.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="30" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">31</div>
+        <div class="q-text">אם כן — לפי מה? חשיפות, אינטראקציות, כמות תכנים?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="31" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">32</div>
+        <div class="q-text">אם כן — רואים שמות של כולם, או רק TOP 3?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="32" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ H: ADMIN ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ח. הרשאות אדמין</h2>
+      <div class="section-sub">מה מיכל (ורק מיכל) יכולה לעשות</div>
+    </div>
+    <div class="context-note">עיקרון: אחרי ההשקה, מיכל מנהלת הכל בעצמה, בלי תלות במפתח.</div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">33</div>
+        <div class="q-text">איך מיכל נכנסת למצב אדמין?</div>
+        <div class="q-hint">סיסמה? לינק נפרד? טוגל? צריך להיות פשוט אבל מוגן.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="33" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">34</div>
+        <div class="q-text">הרשאות אדמין — הרשימה הזו מכסה הכל?</div>
+        <div class="q-hint">(א) פתיחה/סגירה של נושאים (ב) הוספה/הסרה של שמות+ארגונים (ג) עריכה/מחיקה של הזנות (ד) הגדרת יעדים (ה) עדכון קישור/דף מסרים</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="34" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">35</div>
+        <div class="q-text">מיכל צריכה לראות טבלת נתונים גולמיים?</div>
+        <div class="q-hint">או שזה רק למפתח?</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="35" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">36</div>
+        <div class="q-text">מיכל צריכה לייצא נתונים? אקסל/CSV?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="36" placeholder="תשובה..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ============ I: GENERAL ============ -->
+  <div class="section">
+    <div class="section-header">
+      <h2>ט. כללי</h2>
+      <div class="section-sub"></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">37</div>
+        <div class="q-text">מובייל — רוב המזינים ישתמשו בטלפון?</div>
+        <div class="q-hint">אם כן — חשוב שהטופס יהיה מעולה במובייל.</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="37" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">38</div>
+        <div class="q-text">שפה — הכל בעברית? יש מי שמעדיף אנגלית?</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="38" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">39</div>
+        <div class="q-text">התראות — כשמישהו מזין נתונים, מיכל מקבלת הודעה?</div>
+        <div class="q-hint">למשל מייל: "דנה מויצו הזינה 3 תכנים".</div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="39" placeholder="תשובה..."></textarea></div>
+    </div>
+
+    <div class="question">
+      <div class="q-left">
+        <div class="q-num">40</div>
+        <div class="q-text">הערות נוספות / בקשות שלא כיסינו:</div>
+        <div class="q-hint"></div>
+      </div>
+      <div class="q-right"><textarea class="q-answer" data-q="40" placeholder="תשובה..." style="min-height:100px"></textarea></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:20px;font-size:13px;color:var(--gray);font-style:italic">
+    סוף המסמך — אחרי מילוי, להעביר לרונן לבנייה.
+  </div>
+</div>
+
+<script>
+// Auto-save to localStorage
+const KEY = 'redlines-spec-answers';
+
+function saveAll() {
+  const data = {};
+  document.querySelectorAll('.q-answer').forEach(ta => {
+    data[ta.dataset.q] = ta.value;
+  });
+  data._date = document.getElementById('meetingDate').value;
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function loadAll() {
+  try {
+    const data = JSON.parse(localStorage.getItem(KEY) || '{}');
+    document.querySelectorAll('.q-answer').forEach(ta => {
+      if (data[ta.dataset.q]) ta.value = data[ta.dataset.q];
+    });
+    if (data._date) document.getElementById('meetingDate').value = data._date;
+  } catch(e) {}
+}
+
+document.querySelectorAll('.q-answer').forEach(ta => {
+  ta.addEventListener('input', saveAll);
+});
+document.getElementById('meetingDate').addEventListener('change', saveAll);
+
+function exportText() {
+  let text = 'מסמך אפיון קווים אדומים — תשובות\n';
+  text += '================================\n\n';
+  document.querySelectorAll('.q-answer').forEach(ta => {
+    const q = ta.dataset.q;
+    const qText = ta.closest('.question').querySelector('.q-text').textContent;
+    const answer = ta.value.trim() || '(לא נענתה)';
+    text += `${q}. ${qText}\n>> ${answer}\n\n`;
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    alert('התשובות הועתקו! הדבק בצ\'אט עם קלוד.');
+  });
+}
+
+loadAll();
+</script>
+</body>
+</html>

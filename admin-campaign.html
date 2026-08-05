@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קווים אדומים | בניית קמפיין</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--blue-50:#E6F1FB;--blue-100:#B5D4F4;--blue-200:#85B7EB;--blue-400:#378ADD;--blue-600:#185FA5;--blue-800:#0C447C;--blue-900:#042C53;
+--teal-50:#E1F5EE;--teal-100:#9FE1CB;--teal-200:#5DCAA5;--teal-400:#1D9E75;--teal-600:#0F6E56;--teal-800:#085041;
+--green-50:#EAF3DE;--green-400:#639922;
+--red-50:#FCEBEB;--red-400:#E24B4A;
+--amber-50:#FFF8E1;--amber-400:#EF9F27;--amber-600:#854F0B;
+--gray-50:#F8F9FA;--gray-100:#F1F3F5;--gray-200:#E9ECEF;--gray-300:#DEE2E6;--gray-400:#ADB5BD;--gray-500:#868E96;--gray-600:#495057;--gray-700:#343A40;--gray-800:#212529;
+--radius:12px;--radius-sm:8px;
+}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);direction:rtl;min-height:100vh}
+
+/* Top Bar */
+.topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0}
+.topbar-logo img{width:100%;height:100%;object-fit:contain}
+.topbar h1{font-size:18px;font-weight:600;color:var(--blue-900)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.admin-badge{background:var(--amber-50);color:var(--amber-600);font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--gray-50);padding:5px 12px 5px 5px;border-radius:20px}
+.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-400);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.user-chip .uname{font-size:13px;color:var(--gray-700);font-weight:500}
+
+.main{max-width:720px;margin:0 auto;padding:28px 16px 60px}
+
+/* Page header */
+.page-header{margin-bottom:28px}
+.page-header h2{font-size:22px;font-weight:700;color:var(--blue-900);margin-bottom:4px}
+.page-header p{font-size:14px;color:var(--gray-500)}
+
+/* Steps indicator */
+.steps-bar{display:flex;gap:0;margin-bottom:32px;position:relative}
+.step-indicator{flex:1;text-align:center;position:relative;padding-bottom:14px}
+.step-indicator::after{content:'';position:absolute;bottom:0;right:0;left:0;height:3px;background:var(--gray-200);border-radius:2px}
+.step-indicator.active::after{background:var(--blue-400)}
+.step-indicator.done::after{background:var(--teal-400)}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--gray-200);color:var(--gray-500);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;margin-bottom:4px;transition:all .3s}
+.step-indicator.active .step-num{background:var(--blue-400);color:#fff}
+.step-indicator.done .step-num{background:var(--teal-400);color:#fff}
+.step-label{font-size:11px;color:var(--gray-400);display:block}
+.step-indicator.active .step-label{color:var(--blue-600);font-weight:500}
+.step-indicator.done .step-label{color:var(--teal-600)}
+
+/* Sections */
+.section{display:none;animation:fadeIn .3s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:20px;margin-bottom:16px}
+.card-title{font-size:16px;font-weight:600;color:var(--blue-800);margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--gray-400);margin-bottom:16px}
+
+/* Form fields */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:5px}
+.form-group .hint{font-size:11px;color:var(--gray-400);margin-top:3px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.form-row{grid-template-columns:1fr}}
+
+input[type="text"],input[type="date"],input[type="number"],textarea,select{
+  width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);
+  font-size:14px;font-family:inherit;background:#fff;color:var(--gray-800);transition:border-color .2s
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+input::placeholder,textarea::placeholder{color:var(--gray-400);font-size:12px}
+textarea{resize:vertical;min-height:60px}
+
+/* Participants table */
+.participants-table{width:100%;border-collapse:collapse;margin-bottom:12px}
+.participants-table th{font-size:11px;font-weight:600;color:var(--gray-400);text-align:right;padding:6px 10px;border-bottom:2px solid var(--gray-200);text-transform:uppercase;letter-spacing:.3px}
+.participants-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:14px;vertical-align:middle}
+.participants-table tr:hover td{background:var(--gray-50)}
+.remove-btn{width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--gray-400);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.remove-btn:hover{background:var(--red-50);color:var(--red-400)}
+
+.add-row{display:flex;gap:8px;align-items:flex-end}
+.add-row input,.add-row select{flex:1}
+.add-row .add-btn{padding:9px 16px;border:1.5px solid var(--blue-200);border-radius:var(--radius-sm);background:var(--blue-50);color:var(--blue-600);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s}
+.add-row .add-btn:hover{background:var(--blue-400);color:#fff;border-color:var(--blue-400)}
+
+/* Org tags */
+.org-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.org-tag{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:var(--teal-50);color:var(--teal-800);font-size:12px;font-weight:500}
+.org-tag .remove-tag{border:none;background:none;color:var(--teal-400);cursor:pointer;font-size:14px;font-weight:700;padding:0 2px;line-height:1}
+.org-tag .remove-tag:hover{color:var(--red-400)}
+
+/* Goals section */
+.goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.goals-grid{grid-template-columns:1fr}}
+.goal-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-100)}
+.goal-item .goal-icon{font-size:20px;flex-shrink:0}
+.goal-item .goal-label{font-size:12px;color:var(--gray-500);margin-bottom:2px}
+.goal-item input{width:80px;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;font-family:inherit;text-align:center;direction:ltr}
+.goal-item input:focus{outline:none;border-color:var(--blue-400)}
+
+/* Summary */
+.summary-card{background:var(--blue-50);border:1.5px solid var(--blue-200);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--blue-100);font-size:14px}
+.summary-row:last-child{border-bottom:none}
+.summary-row .sr-label{color:var(--gray-600);font-weight:500}
+.summary-row .sr-value{color:var(--blue-800);font-weight:600}
+
+.participant-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.p-chip{font-size:11px;padding:3px 10px;border-radius:12px;background:#fff;color:var(--gray-700);border:1px solid var(--gray-200)}
+
+/* Buttons */
+.btn{padding:11px 24px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:var(--blue-400);color:#fff}
+.btn-primary:hover{background:var(--blue-600)}
+.btn-secondary{background:transparent;color:var(--blue-600);border:1.5px solid var(--blue-200)}
+.btn-secondary:hover{background:var(--blue-50)}
+.btn-success{background:var(--teal-400);color:#fff}
+.btn-success:hover{background:var(--teal-600)}
+.btn-row{display:flex;gap:8px;margin-top:24px}
+.btn-row .btn{flex:1}
+
+/* Success */
+.success-screen{text-align:center;padding:40px 20px}
+.success-icon{width:80px;height:80px;border-radius:50%;background:var(--teal-50);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;animation:popIn .4s ease}
+.success-icon svg{width:40px;height:40px;stroke:var(--teal-400);fill:none;stroke-width:2.5}
+@keyframes popIn{0%{transform:scale(0)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.success-screen h2{font-size:22px;color:var(--teal-800);margin-bottom:8px}
+.success-screen p{font-size:14px;color:var(--gray-500);line-height:1.6}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* Back link */
+.back-link{display:inline-flex;align-items:center;gap:4px;color:var(--gray-400);font-size:13px;text-decoration:none;margin-bottom:16px;transition:color .2s}
+.back-link:hover{color:var(--blue-600)}
+
+/* Toggle switch */
+.toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--gray-300);border-radius:24px;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;right:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--teal-400)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(-20px)}
+
+/* Hidden badge */
+.hidden-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;background:var(--gray-100);color:var(--gray-500);font-size:11px;font-weight:600}
+
+@media print{body{background:#fff}.topbar{display:none}.main{padding:10px}}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-right">
+    <div class="topbar-logo"><img src="logo.jpg" alt="קווים אדומים"></div>
+    <h1>קווים אדומים</h1>
+  </div>
+  <div class="topbar-left">
+    <div class="admin-badge">⚙️ ממשק ניהול</div>
+    <div class="user-chip">
+      <div class="avatar">מפ</div>
+      <span class="uname">מיכל פרינס</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div style="display:flex;gap:6px;margin-bottom:24px">
+    <a style="padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none;color:#fff;background:var(--blue-400);border:1.5px solid var(--blue-400)" href="admin-campaign.html">בניית קמפיין</a>
+    <a style="padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none;color:var(--gray-500);border:1.5px solid var(--gray-200);background:#fff" href="admin-pool.html">ניהול מאגר</a>
+    <a style="padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none;color:var(--gray-500);border:1.5px solid var(--gray-200);background:#fff" href="dashboard.html">דשבורד</a>
+  </div>
+
+  <div class="page-header">
+    <h2>בניית קמפיין חדש</h2>
+    <p>הגדרת הקמפיין, המשתתפים והיעדים לפני פתיחת ההזנה</p>
+  </div>
+
+  <!-- Steps bar -->
+  <div class="steps-bar">
+    <div class="step-indicator active" id="si1">
+      <div class="step-num">1</div>
+      <span class="step-label">פרטי קמפיין</span>
+    </div>
+    <div class="step-indicator" id="si2">
+      <div class="step-num">2</div>
+      <span class="step-label">משתתפים</span>
+    </div>
+    <div class="step-indicator" id="si3">
+      <div class="step-num">3</div>
+      <span class="step-label">יעדים</span>
+    </div>
+    <div class="step-indicator" id="si4">
+      <div class="step-num">4</div>
+      <span class="step-label">סיכום והפעלה</span>
+    </div>
+  </div>
+
+  <!-- STEP 1: Campaign Details -->
+  <div class="section active" id="sec1">
+    <div class="card">
+      <div class="card-title">פרטי הקמפיין</div>
+      <div class="card-sub">שם, תאריכים ותיאור קצר</div>
+
+      <div class="form-group">
+        <label>שם הקמפיין</label>
+        <input type="text" id="campName" placeholder="לדוגמה: מניעת אלימות בזוגיות צעירה" value="מניעת אלימות בזוגיות צעירה">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>תאריך התחלה</label>
+          <input type="date" id="campStart" value="2026-08-15">
+        </div>
+        <div class="form-group">
+          <label>תאריך סיום</label>
+          <input type="date" id="campEnd" value="2026-08-21">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>תיאור קצר (אופציונלי)</label>
+        <textarea id="campDesc" placeholder="מה המטרה? למי הקמפיין מיועד?">קמפיין מרוכז למודעות ציבורית בנושא אלימות בזוגיות צעירה. כל הארגונים מפרסמים תכנים מתואמים במקביל.</textarea>
+      </div>
+
+      <div class="form-group">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-200)">
+          <div>
+            <label style="margin-bottom:2px;font-size:14px;font-weight:600;color:var(--gray-700)">גלוי בדשבורד</label>
+            <div class="hint" style="margin-top:2px">כשמופעל — הקמפיין מופיע ב-dropdown של הדשבורד לכל המשתמשים. כשכבוי — רק מנהל רואה אותו.</div>
+          </div>
+          <label class="toggle" style="margin-right:16px">
+            <input type="checkbox" id="campVisible" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(2)">המשך למשתתפים</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Participants -->
+  <div class="section" id="sec2">
+    <div class="card">
+      <div class="card-title">ארגונים</div>
+      <div class="card-sub">הארגונים שמשתתפים בקמפיין</div>
+
+      <div class="org-tags" id="orgTags"></div>
+
+      <div class="add-row">
+        <input type="text" id="newOrg" placeholder="שם ארגון חדש...">
+        <button class="add-btn" onclick="addOrg()">+ הוספה</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="card-title">משתתפים</div>
+        <button class="btn btn-success" style="font-size:12px;padding:6px 14px" onclick="importFromPool()">📋 ייבוא ממאגר</button>
+      </div>
+      <div class="card-sub">האנשים שיזינו נתונים דרך הטופס. ניתן לייבא את כל המאגר בלחיצה.</div>
+
+      <table class="participants-table">
+        <thead>
+          <tr>
+            <th>שם</th>
+            <th>ארגון</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="participantsBody"></tbody>
+      </table>
+
+      <div class="add-row">
+        <input type="text" id="newName" placeholder="שם מלא...">
+        <select id="newOrgSelect"></select>
+        <button class="add-btn" onclick="addParticipant()">+ הוספה</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(3)">המשך ליעדים</button>
+      <button class="btn btn-secondary" onclick="goStep(1)">חזרה</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Goals -->
+  <div class="section" id="sec3">
+    <div class="card">
+      <div class="card-title">יעדים (אופציונלי)</div>
+      <div class="card-sub">עד 3 יעדים מספריים — יוצגו בדשבורד כאחוז השגה. ייקבעו בפגישת האפיון.</div>
+
+      <div id="goalsContainer"></div>
+
+      <button class="add-btn" id="addGoalBtn" onclick="addGoal()" style="width:100%;justify-content:center;margin-top:8px">+ הוספת יעד</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(4)">סיכום והפעלה</button>
+      <button class="btn btn-secondary" onclick="goStep(2)">חזרה</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Summary & Launch -->
+  <div class="section" id="sec4">
+    <div class="summary-card" id="summaryCard"></div>
+
+    <div class="card" style="border-color:var(--teal-200);background:var(--teal-50)">
+      <div class="card-title" style="color:var(--teal-800)">מה יקרה עם לחיצה על ״הפעלה״?</div>
+      <div style="font-size:13px;color:var(--teal-600);line-height:1.8;margin-top:8px" id="launchChecklist">
+        ✅ הקמפיין ייפתח במערכת<br>
+        ✅ הטופס יתעדכן עם שם הקמפיין<br>
+        ✅ הדשבורד יתחיל להציג נתונים עבור קמפיין זה<br>
+        ✅ ניתן יהיה לשלוח את קישור הטופס למשתתפים
+      </div>
+      <div id="hiddenNotice" style="display:none;margin-top:10px;padding:8px 14px;background:var(--amber-50);border-radius:var(--radius-sm);font-size:12px;color:var(--amber-600)">
+        🔒 שים לב: הקמפיין מוגדר כמוסתר — לא יופיע בדשבורד הציבורי עד שתשנה את ההגדרה.
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="launchCampaign()" style="font-size:16px;padding:14px">🚀 הפעלת הקמפיין</button>
+      <button class="btn btn-secondary" onclick="goStep(3)">חזרה</button>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="section" id="secSuccess">
+    <div class="success-screen">
+      <div class="success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>הקמפיין הופעל בהצלחה!</h2>
+      <p id="successMsg">הקמפיין "מניעת אלימות בזוגיות צעירה" פעיל ומוכן לקבלת נתונים.</p>
+      <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" onclick="copyFormLink()">📋 העתקת קישור הטופס</button>
+        <button class="btn btn-secondary" onclick="window.open('dashboard.html','_blank')">צפייה בדשבורד</button>
+        <button class="btn btn-secondary" onclick="window.open('form.html','_blank')">צפייה בטופס</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+// === DATA ===
+const DEFAULT_ORGS = CONFIG.ORGS;
+
+let orgs = [...DEFAULT_ORGS];
+let participants = [
+  {name:'שרה כהן', org:'ויצו'},
+  {name:'דנה לוי', org:'נעמת'},
+  {name:'רונית אברהם', org:'דלת פתוחה'},
+  {name:'יעל מזרחי', org:'לדעת לבחור נכון'},
+  {name:'מיכל רוזן', org:'איגוד העובדים הסוציאליים'},
+  {name:'נועה שמיר', org:'לתת פה'},
+  {name:'תמר גולן', org:'לא לאלימות'},
+  {name:'אורלי ברק', org:'קווים אדומים'},
+  {name:'עדי פרידמן', org:'ויצו'},
+  {name:'ליאת חן', org:'נעמת'},
+];
+
+// === NAVIGATION ===
+function goStep(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec' + n).classList.add('active');
+
+  for (let i = 1; i <= 4; i++) {
+    const si = document.getElementById('si' + i);
+    si.classList.remove('active', 'done');
+    if (i < n) si.classList.add('done');
+    if (i === n) si.classList.add('active');
+  }
+
+  if (n === 4) {
+    buildSummary();
+    const isVisible = document.getElementById('campVisible').checked;
+    document.getElementById('hiddenNotice').style.display = isVisible ? 'none' : 'block';
+  }
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// === ORGS ===
+function renderOrgs() {
+  const container = document.getElementById('orgTags');
+  container.innerHTML = orgs.map((o, i) => `
+    <span class="org-tag">${o}<button class="remove-tag" onclick="removeOrg(${i})" title="הסרה">×</button></span>
+  `).join('');
+  updateOrgSelect();
+}
+
+function addOrg() {
+  const input = document.getElementById('newOrg');
+  const name = input.value.trim();
+  if (!name || orgs.includes(name)) return;
+  orgs.push(name);
+  input.value = '';
+  renderOrgs();
+  showToast('הארגון "' + name + '" נוסף');
+}
+
+function removeOrg(idx) {
+  const removed = orgs.splice(idx, 1)[0];
+  participants = participants.filter(p => p.org !== removed);
+  renderOrgs();
+  renderParticipants();
+  showToast('הארגון "' + removed + '" הוסר');
+}
+
+function updateOrgSelect() {
+  const sel = document.getElementById('newOrgSelect');
+  sel.innerHTML = '<option value="">בחר ארגון...</option>' + orgs.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+// === PARTICIPANTS ===
+function renderParticipants() {
+  const tbody = document.getElementById('participantsBody');
+  tbody.innerHTML = participants.map((p, i) => `
+    <tr>
+      <td>${p.name}</td>
+      <td><span style="font-size:12px;padding:3px 10px;border-radius:12px;background:var(--teal-50);color:var(--teal-800)">${p.org}</span></td>
+      <td><button class="remove-btn" onclick="removeParticipant(${i})" title="הסרה">×</button></td>
+    </tr>
+  `).join('');
+}
+
+function addParticipant() {
+  const nameInput = document.getElementById('newName');
+  const orgSelect = document.getElementById('newOrgSelect');
+  const name = nameInput.value.trim();
+  const org = orgSelect.value;
+  if (!name || !org) {
+    showToast('יש להזין שם ולבחור ארגון');
+    return;
+  }
+  participants.push({name, org});
+  nameInput.value = '';
+  orgSelect.selectedIndex = 0;
+  renderParticipants();
+  showToast(name + ' נוסף/ה');
+}
+
+function removeParticipant(idx) {
+  const removed = participants.splice(idx, 1)[0];
+  renderParticipants();
+  showToast(removed.name + ' הוסר/ה');
+}
+
+// === IMPORT FROM POOL ===
+function importFromPool() {
+  // In production this would fetch from the DB pool table
+  // For the mockup, simulate importing all pool members
+  const poolData = [
+    {name:'שרה כהן', org:'ויצו'},{name:'עדי פרידמן', org:'ויצו'},
+    {name:'דנה לוי', org:'נעמת'},{name:'ליאת חן', org:'נעמת'},
+    {name:'רונית אברהם', org:'דלת פתוחה'},{name:'הדס כרמל', org:'דלת פתוחה'},
+    {name:'יעל מזרחי', org:'לדעת לבחור נכון'},
+    {name:'מיכל רוזן', org:'איגוד העובדים הסוציאליים'},
+    {name:'נועה שמיר', org:'לתת פה'},
+    {name:'תמר גולן', org:'לא לאלימות'},
+    {name:'אורלי ברק', org:'קווים אדומים'},{name:'רותם דור', org:'קווים אדומים'},
+  ];
+  let added = 0;
+  poolData.forEach(p => {
+    if (!participants.some(x => x.name === p.name && x.org === p.org)) {
+      participants.push(p);
+      added++;
+    }
+    if (!orgs.includes(p.org)) orgs.push(p.org);
+  });
+  renderOrgs();
+  renderParticipants();
+  showToast(added > 0 ? added + ' אנשים יובאו ממאגר' : 'כל האנשים כבר ברשימה');
+}
+
+// === GOALS ===
+let goals = [
+  {name: '', value: ''},
+];
+const MAX_GOALS = 3;
+
+function renderGoals() {
+  const container = document.getElementById('goalsContainer');
+  container.innerHTML = goals.map((g, i) => `
+    <div class="goal-item" style="margin-bottom:8px">
+      <input type="text" value="${g.name}" placeholder="שם היעד" style="flex:1;width:auto" onchange="goals[${i}].name=this.value">
+      <input type="number" value="${g.value}" placeholder="ערך מספרי" style="width:100px" onchange="goals[${i}].value=Number(this.value)">
+      <button class="remove-btn" onclick="removeGoal(${i})" title="הסרה">×</button>
+    </div>
+  `).join('');
+  document.getElementById('addGoalBtn').style.display = goals.length >= MAX_GOALS ? 'none' : 'flex';
+}
+
+function addGoal() {
+  if (goals.length >= MAX_GOALS) return;
+  goals.push({name: '', value: ''});
+  renderGoals();
+}
+
+function removeGoal(idx) {
+  goals.splice(idx, 1);
+  renderGoals();
+}
+
+// === SUMMARY ===
+function buildSummary() {
+  const name = document.getElementById('campName').value || '(ללא שם)';
+  const start = document.getElementById('campStart').value;
+  const end = document.getElementById('campEnd').value;
+  const startFmt = formatDate(start);
+  const endFmt = formatDate(end);
+  const days = Math.ceil((new Date(end) - new Date(start)) / 86400000) + 1;
+
+  const uniqueOrgs = [...new Set(participants.map(p => p.org))];
+
+  const activeGoals = goals.filter(g => g.name && g.value);
+  const goalsHtml = activeGoals.length
+    ? `<div class="summary-row"><span class="sr-label">יעדים</span><span class="sr-value">${activeGoals.map(g => g.name + ': ' + Number(g.value).toLocaleString()).join(' · ')}</span></div>`
+    : '';
+
+  const isVisible = document.getElementById('campVisible').checked;
+  const visibilityHtml = isVisible
+    ? '<span style="color:var(--teal-600);font-weight:600">גלוי לכולם</span>'
+    : '<span class="hidden-badge">🔒 מוסתר — רק מנהל רואה</span>';
+
+  document.getElementById('summaryCard').innerHTML = `
+    <div style="font-size:18px;font-weight:700;color:var(--blue-900);margin-bottom:14px">סיכום הקמפיין</div>
+    <div class="summary-row"><span class="sr-label">שם</span><span class="sr-value">${name}</span></div>
+    <div class="summary-row"><span class="sr-label">תקופה</span><span class="sr-value">${startFmt} — ${endFmt} (${days} ימים)</span></div>
+    <div class="summary-row"><span class="sr-label">נראות בדשבורד</span><span class="sr-value">${visibilityHtml}</span></div>
+    <div class="summary-row"><span class="sr-label">ארגונים</span><span class="sr-value">${uniqueOrgs.length}</span></div>
+    <div class="summary-row"><span class="sr-label">משתתפים</span><span class="sr-value">${participants.length}</span></div>
+    ${goalsHtml}
+    <div class="participant-chips">${participants.map(p => `<span class="p-chip">${p.name} (${p.org})</span>`).join('')}</div>
+  `;
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const dt = new Date(d);
+  return dt.getDate() + ' ב' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+}
+
+// === LAUNCH ===
+function launchCampaign() {
+  const name = document.getElementById('campName').value || 'קמפיין';
+  document.getElementById('successMsg').textContent = 'הקמפיין "' + name + '" פעיל ומוכן לקבלת נתונים.';
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('secSuccess').classList.add('active');
+
+  document.querySelectorAll('.step-indicator').forEach(si => {
+    si.classList.remove('active');
+    si.classList.add('done');
+  });
+}
+
+function copyFormLink() {
+  const url = window.location.origin + '/form.html';
+  navigator.clipboard.writeText(url).then(() => showToast('הקישור הועתק!')).catch(() => showToast('לא ניתן להעתיק'));
+}
+
+// === TOAST ===
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// === ENTER KEY ===
+document.getElementById('newOrg').addEventListener('keydown', e => { if (e.key === 'Enter') addOrg(); });
+document.getElementById('newName').addEventListener('keydown', e => { if (e.key === 'Enter') addParticipant(); });
+
+// === INIT ===
+renderOrgs();
+renderParticipants();
+renderGoals();
+</script>
+</body>
+</html>
