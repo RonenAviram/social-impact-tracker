@@ -363,8 +363,8 @@ textarea{resize:vertical;min-height:60px}
       <p id="successMsg">הקמפיין "מניעת אלימות בזוגיות צעירה" פעיל ומוכן לקבלת נתונים.</p>
       <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px">
         <button class="btn btn-primary" onclick="copyFormLink()">📋 העתקת קישור הטופס</button>
-        <button class="btn btn-secondary" onclick="window.open('dashboard.html','_blank')">צפייה בדשבורד</button>
-        <button class="btn btn-secondary" onclick="window.open('form.html','_blank')">צפייה בטופס</button>
+        <button class="btn btn-secondary" onclick="window.open('dashboard.html?campaign='+window._lastCampaignId,'_blank')">צפייה בדשבורד</button>
+        <button class="btn btn-secondary" onclick="window.open('form.html?campaign='+window._lastCampaignId,'_blank')">צפייה בטופס</button>
       </div>
     </div>
   </div>
@@ -673,7 +673,8 @@ async function launchCampaign() {
       if (gErr) throw gErr;
     }
 
-    // 5. Show success
+    // 5. Show success — store campaignId for links
+    window._lastCampaignId = campaignId;
     document.getElementById('successMsg').textContent = 'הקמפיין "' + campName + '" פעיל ומוכן לקבלת נתונים.';
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('secSuccess').classList.add('active');
@@ -690,7 +691,9 @@ async function launchCampaign() {
 }
 
 function copyFormLink() {
-  const url = window.location.origin + '/form.html';
+  const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  const campParam = window._lastCampaignId ? '?campaign=' + window._lastCampaignId : '';
+  const url = base + 'form.html' + campParam;
   navigator.clipboard.writeText(url).then(() => showToast('הקישור הועתק!')).catch(() => showToast('לא ניתן להעתיק'));
 }
 

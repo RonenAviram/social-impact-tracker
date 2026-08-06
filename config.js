@@ -25,8 +25,8 @@ const CONFIG = {
       return s ? JSON.parse(s) : null;
     } catch { return null; }
   },
-  setSession(profileId, name, orgName, role) {
-    localStorage.setItem('sit_session', JSON.stringify({ profileId, name, orgName, role }));
+  setSession(profileId, name, orgName, role, campaignId) {
+    localStorage.setItem('sit_session', JSON.stringify({ profileId, name, orgName, role, campaignId }));
   },
   clearSession() {
     localStorage.removeItem('sit_session');

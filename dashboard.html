@@ -212,7 +212,6 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <div class="topbar-logo" style="background:none;overflow:hidden"><img src="logo.jpg" alt="קווים אדומים" style="width:36px;height:36px;object-fit:contain"></div>
     <h1>קווים אדומים</h1>
     <select id="topicSelect" onchange="changeTopic()" aria-label="בחירת קמפיין" style="padding:4px 12px;border-radius:16px;border:1.5px solid var(--teal-200);font-size:12px;font-weight:600;color:var(--teal-800);background:var(--teal-50);font-family:inherit;cursor:pointer">
-      <option value="violence-young-couples" selected>מניעת אלימות בזוגיות צעירה</option>
     </select>
   </div>
   <div class="topbar-left">
@@ -349,6 +348,23 @@ function buildFilterChips() {
 }
 buildFilterChips();
 
+// Resolve campaign ID from URL param or CONFIG default
+function getActiveCampaignId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('campaign') || CONFIG.CAMPAIGN_ID;
+}
+let activeCampaignId = getActiveCampaignId();
+
+// Load all campaigns into dropdown
+async function loadCampaignDropdown() {
+  const db = CONFIG.db();
+  if (!db) return;
+  const { data: camps } = await db.from('campaigns').select('id, name, status').order('created_at', { ascending: false });
+  if (!camps || camps.length === 0) return;
+  const sel = document.getElementById('topicSelect');
+  sel.innerHTML = camps.map(c => `<option value="${c.id}" ${c.id === activeCampaignId ? 'selected' : ''}>${c.name}</option>`).join('');
+}
+
 // Load data from Supabase
 function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
 
@@ -356,7 +372,7 @@ async function loadDashboardData() {
   const db = CONFIG.db();
   if (!db) { hideLoading(); return; }
 
-  const { data, error } = await db.rpc('get_dashboard_data', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  const { data, error } = await db.rpc('get_dashboard_data', { p_campaign_id: activeCampaignId });
   if (error) { console.error('Dashboard load error:', error); hideLoading(); return; }
 
   // Transform DB rows to the entries format that all render functions expect
@@ -387,9 +403,10 @@ async function loadDashboardData() {
   });
 
   // Load campaign info
-  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
   if (campData) {
-    document.querySelector('#topicSelect option[selected]').textContent = campData.name;
+    const selOpt = document.querySelector('#topicSelect option[value="' + activeCampaignId + '"]');
+    if (selOpt) selOpt.textContent = campData.name;
     if (campData.status === 'ended') updateCampStatus('ended');
     else if (campData.status === 'paused') updateCampStatus('paused');
   }
@@ -397,7 +414,7 @@ async function loadDashboardData() {
   // Load goals
   const { data: goalsData } = await db.from('campaign_goals')
     .select('*')
-    .eq('campaign_id', CONFIG.CAMPAIGN_ID)
+    .eq('campaign_id', activeCampaignId)
     .order('sort_order');
   if (goalsData) window._campaignGoals = goalsData;
 
@@ -914,7 +931,7 @@ async function toggleAdmin() {
 
     const db = CONFIG.db();
     const { data: isValid } = await db.rpc('verify_admin', {
-      p_campaign_id: CONFIG.CAMPAIGN_ID,
+      p_campaign_id: activeCampaignId,
       p_password: pass
     });
 
@@ -932,7 +949,7 @@ async function toggleAdmin() {
 
 async function updateCampStatusDB(newStatus) {
   const db = CONFIG.db();
-  await db.from('campaigns').update({ status: newStatus }).eq('id', CONFIG.CAMPAIGN_ID);
+  await db.from('campaigns').update({ status: newStatus }).eq('id', activeCampaignId);
 }
 
 function updateCampStatus(forceStatus) {
@@ -989,13 +1006,14 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// Topic switcher — currently single topic, ready for expansion
+// Topic switcher
 function changeTopic() {
+  activeCampaignId = document.getElementById('topicSelect').value;
   loadDashboardData();
 }
 
 // Initial load from Supabase
-loadDashboardData();
+loadCampaignDropdown().then(() => loadDashboardData());
 </script>
 </body>
 </html>

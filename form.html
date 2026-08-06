@@ -252,7 +252,6 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
           <button class="btn btn-primary" id="btnNextPlatform" onclick="nextPlatformStep()">הבא</button>
           <button class="btn btn-secondary" id="btnPrevPlatform" onclick="prevPlatformStep()" style="display:none">הקודם</button>
         </div>
-        <div class="note">הנתונים יתאפסו ל-0 — ניתן לעדכן בכל עת מהאזור האישי</div>
       </div>
 
       <button class="btn btn-secondary btn-full" style="margin-top:12px" onclick="backFromUpload()">חזרה</button>
@@ -331,12 +330,25 @@ let currentPlatformIdx = 0;
 // =================== INIT ===================
 function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
 
+// Resolve campaign ID from URL param or CONFIG default
+function getActiveCampaignId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('campaign') || CONFIG.CAMPAIGN_ID;
+}
+const activeCampaignId = getActiveCampaignId();
+
 async function init() {
   const db = CONFIG.db();
   if (!db) { hideLoading(); showToast('שגיאה בחיבור למסד הנתונים'); return; }
 
+  // If campaign changed from session, clear session so user must re-login
+  const session = CONFIG.getSession();
+  if (session && session.campaignId && session.campaignId !== activeCampaignId) {
+    CONFIG.clearSession();
+  }
+
   // Load campaign info
-  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
   if (campData) {
     CAMPAIGN = campData;
   }
@@ -363,7 +375,7 @@ async function init() {
   document.getElementById('uploadDate').value = today();
 
   // Load pool from Supabase
-  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: CONFIG.CAMPAIGN_ID });
+  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
   if (poolData) {
     POOL = poolData.map(p => ({ name: p.name, org: p.org_name, profileId: p.profile_id }));
   }
@@ -485,7 +497,7 @@ async function doLogin() {
   }
 
   currentUser = { profileId: poolMatch.profileId, name, org };
-  CONFIG.setSession(poolMatch.profileId, name, org, 'member');
+  CONFIG.setSession(poolMatch.profileId, name, org, 'member', activeCampaignId);
 
   // Update user bars across screens
   const initials = getInitials(name);
@@ -541,7 +553,7 @@ async function renderPersonalArea() {
   const db = CONFIG.db();
   const { data: contents, error } = await db.rpc('get_user_contents', {
     p_profile_id: currentUser.profileId,
-    p_campaign_id: CONFIG.CAMPAIGN_ID
+    p_campaign_id: activeCampaignId
   });
 
   if (error) { list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-400)">שגיאה בטעינה</div>'; return; }
@@ -777,7 +789,7 @@ async function saveAllUploads() {
 
     const { error } = await db.rpc('add_content_entry', {
       p_profile_id: currentUser.profileId,
-      p_campaign_id: CONFIG.CAMPAIGN_ID,
+      p_campaign_id: activeCampaignId,
       p_platform_id: plat.id,
       p_content_type: data.type,
       p_link: data.link,
