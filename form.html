@@ -15,6 +15,7 @@
 --radius:12px;--radius-sm:8px;
 }
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;direction:rtl}
+:focus-visible{outline:2px solid var(--blue-400);outline-offset:2px;border-radius:4px}
 .container{max-width:600px;margin:0 auto;padding:24px 16px 60px}
 
 .header{text-align:center;margin-bottom:28px}
@@ -143,9 +144,25 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 
 .skip-link{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--gray-400);text-decoration:none;transition:color .2s}
 .skip-link:hover{color:var(--blue-600)}
+
+/* Mobile enhancements */
+@media(max-width:420px){
+  .container{padding:16px 10px 40px}
+  .header h1{font-size:19px}
+  .campaign-badge{font-size:12px;padding:5px 12px}
+  .btn{padding:10px 18px;font-size:14px}
+  .cc-metrics{grid-template-columns:repeat(2,1fr)}
+  .content-card{padding:12px}
+}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
+.loading-overlay.hidden{display:none}
+.spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--blue-400);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:12px;font-size:14px;color:var(--gray-500)}
 </style>
 </head>
 <body>
+<div class="loading-overlay" id="loadingOverlay" role="status" aria-label="טוען"><div class="spinner"></div><div class="loading-text">טוען...</div></div>
 <div class="container">
 
   <div class="header">
@@ -160,13 +177,13 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
       <div class="login-title">כניסה למערכת</div>
       <div class="field">
         <label>שם מלא</label>
-        <select id="loginName" onchange="onNameChange()">
+        <select id="loginName" onchange="onNameChange()" aria-label="בחירת שם">
           <option value="">בחירת שם...</option>
         </select>
       </div>
       <div class="field">
         <label>ארגון</label>
-        <select id="loginOrg" onchange="checkLoginReady()">
+        <select id="loginOrg" onchange="checkLoginReady()" aria-label="בחירת ארגון">
           <option value="">בחירת ארגון...</option>
         </select>
       </div>
@@ -291,7 +308,7 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -312,9 +329,11 @@ let uploadPlatformData = {};
 let currentPlatformIdx = 0;
 
 // =================== INIT ===================
+function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
+
 async function init() {
   const db = CONFIG.db();
-  if (!db) { showToast('שגיאה בחיבור למסד הנתונים'); return; }
+  if (!db) { hideLoading(); showToast('שגיאה בחיבור למסד הנתונים'); return; }
 
   // Load campaign info
   const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: CONFIG.CAMPAIGN_ID });
@@ -359,8 +378,10 @@ async function init() {
   PLATFORMS.forEach(p => {
     const d = document.createElement('div');
     d.className = 'platform-card'; d.dataset.id = p.id;
+    d.setAttribute('role', 'checkbox'); d.setAttribute('aria-checked', 'false'); d.setAttribute('aria-label', p.name); d.tabIndex = 0;
     d.innerHTML = `<div class="check"></div><span class="icon">${p.icon}</span><span class="name">${p.name}</span>`;
     d.onclick = () => toggleUploadPlatform(p.id);
+    d.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUploadPlatform(p.id); } };
     grid.appendChild(d);
   });
 
@@ -376,9 +397,11 @@ async function init() {
       ['userName','uploadUserName','updateUserName'].forEach(id => document.getElementById(id).textContent = currentUser.name);
       ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => document.getElementById(id).textContent = currentUser.org);
       showScreen('screenPersonal');
+      hideLoading();
       return;
     }
   }
+  hideLoading();
 }
 
 function today() { return new Date().toISOString().slice(0,10); }
@@ -602,7 +625,9 @@ function toggleUploadPlatform(platId) {
     uploadSelectedPlatforms.push(PLATFORMS.find(p => p.id === platId));
   }
   document.querySelectorAll('#uploadPlatformGrid .platform-card').forEach(c => {
-    c.classList.toggle('selected', uploadSelectedPlatforms.some(p => p.id === c.dataset.id));
+    const sel = uploadSelectedPlatforms.some(p => p.id === c.dataset.id);
+    c.classList.toggle('selected', sel);
+    c.setAttribute('aria-checked', sel ? 'true' : 'false');
   });
   document.getElementById('btnContinueUpload').disabled = uploadSelectedPlatforms.length === 0;
 }
@@ -899,10 +924,12 @@ async function confirmDelete() {
 }
 
 // =================== TOAST ===================
+let _toastTimer;
 function showToast(msg) {
+  clearTimeout(_toastTimer);
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 // Init

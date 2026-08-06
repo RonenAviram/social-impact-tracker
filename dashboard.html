@@ -20,6 +20,7 @@
 --radius:12px;--radius-sm:8px;
 }
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);direction:rtl;min-height:100vh}
+:focus-visible{outline:2px solid var(--blue-400);outline-offset:2px;border-radius:4px}
 
 /* Top Bar */
 .topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:50}
@@ -165,15 +166,52 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .footer{text-align:center;padding:20px;font-size:11px;color:var(--gray-400)}
+
+/* Loading */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
+.loading-overlay.hidden{display:none}
+.spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--blue-400);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:12px;font-size:14px;color:var(--gray-500)}
+
+/* Mobile enhancements */
+@media(max-width:600px){
+  .topbar{padding:8px 12px}
+  .topbar h1{font-size:15px}
+  .topbar .blitz-badge{font-size:10px;padding:3px 8px}
+  .topbar-left{gap:8px}
+  .user-chip .uname{display:none}
+  .admin-toggle span{display:none}
+  .main{padding:14px 10px 40px}
+  .filters{gap:5px}
+  .filter-chip,.org-chip{font-size:11px;padding:4px 10px}
+  .metric-card .value{font-size:22px}
+  .chart-wrap{height:200px}
+  .breakdown-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+  .breakdown-card{padding:10px 8px}
+  .bk-val{font-size:15px}
+  .lb-item{padding:7px 0;gap:8px}
+  .lb-name{font-size:12px}
+  .lb-val{font-size:13px}
+  .link-item{flex-wrap:wrap;gap:6px}
+  .link-item .li-link{max-width:100%;flex:1 1 100%}
+  .goals-section{padding:14px}
+  .section-title{font-size:14px}
+}
 </style>
 </head>
 <body>
 
-<div class="topbar">
+<div class="loading-overlay" id="loadingOverlay" role="status" aria-label="טוען נתונים">
+  <div class="spinner"></div>
+  <div class="loading-text">טוען נתונים...</div>
+</div>
+
+<div class="topbar" role="banner">
   <div class="topbar-right">
     <div class="topbar-logo" style="background:none;overflow:hidden"><img src="logo.jpg" alt="קווים אדומים" style="width:36px;height:36px;object-fit:contain"></div>
     <h1>קווים אדומים</h1>
-    <select id="topicSelect" onchange="changeTopic()" style="padding:4px 12px;border-radius:16px;border:1.5px solid var(--teal-200);font-size:12px;font-weight:600;color:var(--teal-800);background:var(--teal-50);font-family:inherit;cursor:pointer">
+    <select id="topicSelect" onchange="changeTopic()" aria-label="בחירת קמפיין" style="padding:4px 12px;border-radius:16px;border:1.5px solid var(--teal-200);font-size:12px;font-weight:600;color:var(--teal-800);background:var(--teal-50);font-family:inherit;cursor:pointer">
       <option value="violence-young-couples" selected>מניעת אלימות בזוגיות צעירה</option>
     </select>
   </div>
@@ -283,7 +321,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 </div>
 
 <div class="footer">קווים אדומים © 2026 | דשבורד חברתי</div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -301,23 +339,25 @@ let entries = [];
 function buildFilterChips() {
   const platContainer = document.getElementById('platformFilters');
   platContainer.innerHTML = '<div class="filter-label">פלטפורמה:</div>' +
-    '<button class="filter-chip active" data-filter="all" onclick="togglePlatformFilter(this)">הכל</button>' +
-    PLATFORMS.map(p => `<button class="filter-chip" data-filter="${p.id}" onclick="togglePlatformFilter(this)">${p.icon} ${p.name}</button>`).join('');
+    '<button class="filter-chip active" data-filter="all" aria-pressed="true" onclick="togglePlatformFilter(this)">הכל</button>' +
+    PLATFORMS.map(p => `<button class="filter-chip" data-filter="${p.id}" aria-pressed="false" onclick="togglePlatformFilter(this)">${p.icon} ${p.name}</button>`).join('');
 
   const orgContainer = document.getElementById('orgFilters');
   orgContainer.innerHTML = '<div class="filter-label">ארגון:</div>' +
-    '<button class="org-chip active" data-org="all" onclick="toggleOrgFilter(this)">הכל</button>' +
-    ORGS.map(o => `<button class="org-chip" data-org="${o}" onclick="toggleOrgFilter(this)">${o}</button>`).join('');
+    '<button class="org-chip active" data-org="all" aria-pressed="true" onclick="toggleOrgFilter(this)">הכל</button>' +
+    ORGS.map(o => `<button class="org-chip" data-org="${o}" aria-pressed="false" onclick="toggleOrgFilter(this)">${o}</button>`).join('');
 }
 buildFilterChips();
 
 // Load data from Supabase
+function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
+
 async function loadDashboardData() {
   const db = CONFIG.db();
-  if (!db) return;
+  if (!db) { hideLoading(); return; }
 
   const { data, error } = await db.rpc('get_dashboard_data', { p_campaign_id: CONFIG.CAMPAIGN_ID });
-  if (error) { console.error('Dashboard load error:', error); return; }
+  if (error) { console.error('Dashboard load error:', error); hideLoading(); return; }
 
   // Transform DB rows to the entries format that all render functions expect
   entries = (data || []).map(row => {
@@ -364,6 +404,7 @@ async function loadDashboardData() {
   // Org filter chips stay as built by buildFilterChips() from CONFIG.ORGS
 
   renderAll();
+  hideLoading();
 }
 
 // =================== STATE ===================
@@ -419,11 +460,9 @@ function toggleOrgFilter(el) {
 function syncPlatformChips() {
   const allActive = selectedPlatforms.size === 0;
   document.querySelectorAll('.filter-chip').forEach(c => {
-    if (c.dataset.filter === 'all') {
-      c.classList.toggle('active', allActive);
-    } else {
-      c.classList.toggle('active', selectedPlatforms.has(c.dataset.filter));
-    }
+    const isActive = c.dataset.filter === 'all' ? allActive : selectedPlatforms.has(c.dataset.filter);
+    c.classList.toggle('active', isActive);
+    c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
 }
 
@@ -431,11 +470,9 @@ function syncPlatformChips() {
 function syncOrgChips() {
   const allActive = selectedOrgs.size === 0;
   document.querySelectorAll('.org-chip').forEach(c => {
-    if (c.dataset.org === 'all') {
-      c.classList.toggle('active', allActive);
-    } else {
-      c.classList.toggle('active', selectedOrgs.has(c.dataset.org));
-    }
+    const isActive = c.dataset.org === 'all' ? allActive : selectedOrgs.has(c.dataset.org);
+    c.classList.toggle('active', isActive);
+    c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
 }
 
@@ -943,11 +980,13 @@ function exportCSV() {
 }
 
 
+let _toastTimer;
 function showToast(msg) {
+  clearTimeout(_toastTimer);
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 // Topic switcher — currently single topic, ready for expansion

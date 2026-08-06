@@ -16,6 +16,7 @@
 --radius:12px;--radius-sm:8px;
 }
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);direction:rtl;min-height:100vh}
+:focus-visible{outline:2px solid var(--blue-400);outline-offset:2px;border-radius:4px}
 
 /* Top Bar */
 .topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
@@ -150,12 +151,33 @@ textarea{resize:vertical;min-height:60px}
 .hidden-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;background:var(--gray-100);color:var(--gray-500);font-size:11px;font-weight:600}
 
 @media print{body{background:#fff}.topbar{display:none}.main{padding:10px}}
+
+/* Mobile enhancements */
+@media(max-width:600px){
+  .topbar{padding:8px 12px}
+  .topbar h1{font-size:15px}
+  .topbar-left .user-chip .uname{display:none}
+  .main{padding:16px 10px 40px}
+  .admin-nav{gap:4px}
+  .nav-tab{padding:6px 12px;font-size:12px}
+  .steps{gap:4px}
+  .step{padding:6px 10px;font-size:11px}
+  .step .step-num{width:22px;height:22px;font-size:11px}
+  .card{padding:14px}
+  .card-title{font-size:15px}
+}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
+.loading-overlay.hidden{display:none}
+.spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--blue-400);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:12px;font-size:14px;color:var(--gray-500)}
 </style>
 </head>
 <body>
+<div class="loading-overlay" id="loadingOverlay" role="status" aria-label="טוען"><div class="spinner"></div><div class="loading-text">טוען...</div></div>
 
 <!-- Top Bar -->
-<div class="topbar">
+<div class="topbar" role="banner">
   <div class="topbar-right">
     <div class="topbar-logo"><img src="logo.jpg" alt="קווים אדומים"></div>
     <h1>קווים אדומים</h1>
@@ -282,7 +304,7 @@ textarea{resize:vertical;min-height:60px}
 
       <div class="add-row">
         <input type="text" id="newName" placeholder="שם מלא...">
-        <select id="newOrgSelect"></select>
+        <select id="newOrgSelect" aria-label="בחירת ארגון להוספה"></select>
         <button class="add-btn" onclick="addParticipant()">+ הוספה</button>
       </div>
     </div>
@@ -348,7 +370,7 @@ textarea{resize:vertical;min-height:60px}
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -359,9 +381,11 @@ let participants = [];   // [{profile_id, name, org, org_id}]
 let poolProfiles = [];   // all active profiles from DB
 
 // === INIT ===
+function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
+
 async function init() {
   const db = CONFIG.db();
-  if (!db) { showToast('שגיאה: Supabase לא מוגדר'); return; }
+  if (!db) { hideLoading(); showToast('שגיאה: Supabase לא מוגדר'); return; }
 
   try {
     // Load orgs
@@ -385,9 +409,11 @@ async function init() {
     renderOrgs();
     renderParticipants();
     renderGoals();
+    hideLoading();
   } catch (e) {
     console.error('Init error:', e);
     showToast('שגיאה בטעינת נתונים');
+    hideLoading();
   }
 }
 
@@ -669,11 +695,13 @@ function copyFormLink() {
 }
 
 // === TOAST ===
+let _toastTimer;
 function showToast(msg) {
+  clearTimeout(_toastTimer);
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 // === ENTER KEY ===
