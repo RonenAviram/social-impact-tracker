@@ -364,7 +364,7 @@ textarea{resize:vertical;min-height:60px}
       <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px">
         <button class="btn btn-primary" onclick="copyFormLink()">📋 העתקת קישור הטופס</button>
         <button class="btn btn-secondary" onclick="window.open('dashboard.html?campaign='+window._lastCampaignId,'_blank')">צפייה בדשבורד</button>
-        <button class="btn btn-secondary" onclick="window.open('form.html?campaign='+window._lastCampaignId,'_blank')">צפייה בטופס</button>
+        <button class="btn btn-secondary" onclick="window.open('form.html?campaign='+window._lastCampaignId,'_blank')">הזנת תוכן</button>
       </div>
     </div>
   </div>
@@ -625,7 +625,15 @@ async function launchCampaign() {
   try {
     const db = CONFIG.db();
 
-    // 1. Create campaign
+    // 1. Get admin password hash from existing campaign (so new campaign inherits it)
+    const { data: existingCamp } = await db.from('campaigns')
+      .select('admin_password_hash')
+      .not('admin_password_hash', 'is', null)
+      .limit(1)
+      .single();
+    const adminHash = existingCamp ? existingCamp.admin_password_hash : null;
+
+    // 2. Create campaign
     const { data: camp, error: campErr } = await db.from('campaigns')
       .insert({
         name: campName,
@@ -633,7 +641,7 @@ async function launchCampaign() {
         start_date: startDate,
         end_date: endDate,
         status: isVisible ? 'active' : 'paused',
-        admin_password_hash: null // Will inherit from existing or be set later
+        admin_password_hash: adminHash
       })
       .select('id').single();
     if (campErr) throw campErr;

@@ -342,8 +342,8 @@ async function init() {
   if (!db) { hideLoading(); showToast('שגיאה בחיבור למסד הנתונים'); return; }
 
   // If campaign changed from session, clear session so user must re-login
-  const session = CONFIG.getSession();
-  if (session && session.campaignId && session.campaignId !== activeCampaignId) {
+  const prevSession = CONFIG.getSession();
+  if (prevSession && (!prevSession.campaignId || prevSession.campaignId !== activeCampaignId)) {
     CONFIG.clearSession();
   }
 
