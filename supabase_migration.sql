@@ -100,6 +100,7 @@ ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "orgs_read" ON organizations FOR SELECT USING (true);
 CREATE POLICY "orgs_write" ON organizations FOR INSERT WITH CHECK (true);
 CREATE POLICY "orgs_update" ON organizations FOR UPDATE USING (true);
+CREATE POLICY "orgs_delete" ON organizations FOR DELETE USING (true);
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "profiles_read" ON profiles FOR SELECT USING (true);

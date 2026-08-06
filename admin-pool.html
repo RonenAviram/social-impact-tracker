@@ -386,6 +386,7 @@ async function removePerson(profileId) {
     const p = pool.find(x => x.profile_id === profileId);
     if (p) p.is_active = false;
     renderPeople();
+    renderOrgs();
     showToast((p ? p.name : '') + ' הוסר/ה מהמאגר');
   } catch (e) {
     console.error('Remove person error:', e);
@@ -423,6 +424,7 @@ async function addOrg() {
     input.value = '';
     renderOrgs();
     updateOrgSelect();
+    updateStats();
     showToast('הארגון "' + name + '" נוסף');
   } catch (e) {
     console.error('Add org error:', e);
@@ -447,6 +449,7 @@ async function removeOrg(orgId) {
     orgs = orgs.filter(o => o.id !== orgId);
     renderOrgs();
     updateOrgSelect();
+    updateStats();
     showToast('הארגון "' + (orgObj ? orgObj.name : '') + '" הוסר');
   } catch (e) {
     console.error('Remove org error:', e);

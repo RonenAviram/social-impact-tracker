@@ -322,10 +322,16 @@ async function init() {
     CAMPAIGN = campData;
   }
 
+  // Check if campaign expired by end_date (even if status is still 'active')
+  if (CAMPAIGN.end_date && new Date() > new Date(CAMPAIGN.end_date + 'T23:59:59') && CAMPAIGN.status === 'active') {
+    CAMPAIGN.status = 'ended';
+  }
+
   const badge = document.getElementById('campaignName');
   badge.textContent = CAMPAIGN.name;
   if (CAMPAIGN.status === 'ended') {
-    badge.textContent += ' (הסתיים)';
+    const endStr = CAMPAIGN.end_date ? formatDate(CAMPAIGN.end_date) : '';
+    badge.textContent += endStr ? ` (הסתיים ב-${endStr})` : ' (הסתיים)';
     badge.style.borderColor = '#ccc';
     badge.style.color = '#888';
     badge.style.background = '#f5f5f5';
@@ -655,10 +661,22 @@ function renderCurrentPlatformStep() {
   validateCurrentStep();
 }
 
+function isValidUrl(str) {
+  return /^https?:\/\/.+/i.test(str.trim());
+}
+
 function validateCurrentStep() {
   const link = document.getElementById('uploadLink').value.trim();
   const date = document.getElementById('uploadDate').value;
-  document.getElementById('btnNextPlatform').disabled = !link || !date;
+  const linkInput = document.getElementById('uploadLink');
+
+  if (link && !isValidUrl(link)) {
+    linkInput.style.borderColor = 'var(--red-400)';
+    document.getElementById('btnNextPlatform').disabled = true;
+  } else {
+    linkInput.style.borderColor = '';
+    document.getElementById('btnNextPlatform').disabled = !link || !date;
+  }
 }
 
 // Wire upload validation
@@ -680,6 +698,9 @@ function savePlatformStepData() {
 }
 
 function nextPlatformStep() {
+  const link = document.getElementById('uploadLink').value.trim();
+  if (!link) { showToast('נא למלא קישור לתוכן'); return; }
+  if (!isValidUrl(link)) { showToast('נא להזין קישור תקין (https://...)'); return; }
   savePlatformStepData();
   const total = uploadSelectedPlatforms.length;
   if (currentPlatformIdx < total - 1) {
