@@ -238,6 +238,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
       <a href="admin-pool.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--teal-400)">👥 ניהול מאגר</a>
       <button class="admin-btn" style="background:var(--gray-600)" onclick="exportCSV()">📥 ייצוא CSV</button>
       <button class="admin-btn" style="background:var(--green-600,#16a34a)" onclick="copyFormLink()">📋 העתק קישור להזנת תוכן</button>
+      <button class="admin-btn" style="background:#dc2626" onclick="deleteCampaign()">🗑️ מחק קמפיין</button>
     </div>
     <div class="admin-grid">
       <div class="admin-card">
@@ -724,7 +725,7 @@ function renderCharts() {
   chartTimeline = new Chart(document.getElementById('chartTimeline'), {
     type: 'line',
     data: { labels: dayLabels, datasets: [{ label: 'חשיפות מצטברות', data: cumData, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,.08)', fill: true, tension: .3, pointRadius: 4, pointBackgroundColor: '#378ADD' }] },
-    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v } }, x: { ticks: { font: { size: 11 } } } } }
+    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => { if (v !== Math.floor(v)) return ''; return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v; } } }, x: { ticks: { font: { size: 11 } } } } }
   });
 
   // Engagement by type — DYNAMIC based on platform filter
@@ -766,7 +767,7 @@ function renderEngagementChart(d) {
   chartEngagement = new Chart(document.getElementById('chartEngagement'), {
     type: 'bar',
     data: { labels: engLabels, datasets: [{ data: vals, backgroundColor: colors.slice(0, vals.length), borderRadius: 6, barPercentage: .55 }] },
-    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v } }, x: { ticks: { font: { size: 11 }, maxRotation: 45 } } } }
+    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => { if (v !== Math.floor(v)) return ''; return v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v; } } }, x: { ticks: { font: { size: 11 }, maxRotation: 45 } } } }
   });
 }
 
@@ -893,6 +894,29 @@ function copyLink(link) {
   });
 }
 
+async function deleteCampaign() {
+  const camp = allCampaigns.find(c => c.id === activeCampaignId);
+  const campName = camp ? camp.name : activeCampaignId;
+  if (!confirm(`למחוק את הקמפיין "${campName}"?\n\nפעולה זו תמחק את כל התכנים, המדדים והיעדים שקשורים לקמפיין. לא ניתן לשחזר.`)) return;
+  if (!confirm('בטוח? לחץ OK כדי למחוק לצמיתות.')) return;
+
+  const db = CONFIG.db();
+  const { error } = await db.from('campaigns').delete().eq('id', activeCampaignId);
+  if (error) { showToast('שגיאה במחיקה: ' + error.message); console.error(error); return; }
+
+  // Remove from local cache and switch to another campaign
+  allCampaigns = allCampaigns.filter(c => c.id !== activeCampaignId);
+  if (allCampaigns.length > 0) {
+    activeCampaignId = allCampaigns[0].id;
+    renderCampaignDropdown();
+    loadDashboardData();
+    showToast('הקמפיין נמחק');
+  } else {
+    showToast('הקמפיין נמחק — אין קמפיינים נוספים');
+    location.reload();
+  }
+}
+
 function copyFormLink() {
   const base = window.location.href.replace(/dashboard\.html.*/, 'form.html');
   const link = base + '?campaign=' + activeCampaignId;
@@ -901,7 +925,8 @@ function copyFormLink() {
 
 function renderLinkArchive() {
   const searchTerm = (document.getElementById('linkSearchInput')?.value || '').trim().toLowerCase();
-  let d = filtered().filter(e => e.link && e.link.trim());
+  // Link archive is independent — uses all entries, not chart-filtered data
+  let d = entries.filter(e => e.link && e.link.trim());
 
   // Platform filter
   if (currentLinkFilter !== 'all') d = d.filter(e => e.platform === currentLinkFilter);
@@ -921,7 +946,7 @@ function renderLinkArchive() {
 
   // Build platform filter tabs
   const filtersContainer = document.getElementById('linkFilters');
-  const allWithLinks = filtered().filter(e => e.link && e.link.trim());
+  const allWithLinks = entries.filter(e => e.link && e.link.trim());
   const platIds = [...new Set(allWithLinks.map(e => e.platform))];
   filtersContainer.innerHTML = `<button class="lb-tab${currentLinkFilter === 'all' ? ' active' : ''}" data-linkfilter="all" onclick="setLinkFilter(this)">הכל (${allWithLinks.length})</button>`;
   platIds.forEach(pid => {
