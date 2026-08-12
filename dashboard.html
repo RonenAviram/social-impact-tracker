@@ -261,10 +261,14 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <div class="metric-card"><div class="accent" style="background:var(--purple-400)"></div><div class="label">משתתפים פעילים</div><div class="value" id="totalPeople">—</div><div class="change up" id="changePeople"></div></div>
   </div>
 
-  <!-- Goals (admin only) -->
+  <!-- Goals -->
   <div class="goals-section" style="position:relative;display:none">
-    <div class="section-title">יעדים</div>
-    <div id="goalsContainer"></div>
+    <div class="section-title">יעדים ראשיים</div>
+    <div id="primaryGoalsContainer"></div>
+  </div>
+  <div class="goals-section goals-secondary-section" style="position:relative;display:none">
+    <div class="section-title">יעדים לפי פלטפורמה</div>
+    <div id="secondaryGoalsContainer"></div>
   </div>
 
   <!-- Charts -->
@@ -600,44 +604,89 @@ function animateValue(id, target) {
   document.getElementById(id).textContent = target.toLocaleString();
 }
 
+function computeGoalValue(goal, data) {
+  const d = data;
+  const type = goal.goal_type;
+
+  // Primary goal types
+  if (type === 'total_reach') return d.reduce((s, e) => s + e.reach, 0);
+  if (type === 'total_engagement') return d.reduce((s, e) => s + e.engagement, 0);
+  if (type === 'total_content') return d.length;
+  if (type === 'active_participants') return new Set(d.map(e => e.person.id)).size;
+  if (type === 'active_platforms') return new Set(d.map(e => e.platform)).size;
+
+  // Secondary (platform_metric) — sum a specific metric across entries of that platform
+  if (type === 'platform_metric' && goal.platform_id && goal.metric_id) {
+    const platEntries = d.filter(e => e.platform === goal.platform_id);
+    return platEntries.reduce((s, e) => s + (Number(e.metrics[goal.metric_id]) || 0), 0);
+  }
+
+  // Legacy / custom — try matching by name
+  const fallback = {
+    'חשיפות כוללות': d.reduce((s, e) => s + e.reach, 0),
+    'תכנים שהועלו': d.length,
+    'משתתפים פעילים': new Set(d.map(e => e.person.id)).size
+  };
+  return fallback[goal.name] || 0;
+}
+
+function renderGoalBar(g) {
+  const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
+  const cls = pct >= 100 ? 'background:var(--teal-400)' : pct >= 50 ? 'background:var(--blue-400)' : 'background:var(--amber-400)';
+  return `<div class="goal-row"><div class="goal-header"><span class="goal-name">${g.name}</span><span class="goal-nums"><span>${g.current.toLocaleString()}</span> / ${g.target.toLocaleString()}</span></div><div class="goal-bar"><div class="goal-fill" style="width:${pct}%;${cls}"></div></div></div>`;
+}
+
 function renderGoals() {
   const d = filtered();
-  const totalReach = d.reduce((s, e) => s + e.reach, 0);
-  const unique = new Set(d.map(e => e.person.id));
-
-  // Map goal names to computed current values
-  const goalValues = {
-    'חשיפות כוללות': totalReach,
-    'תכנים שהועלו': d.length,
-    'משתתפים פעילים': unique.size,
-  };
-  // Special: FB average reach
-  const fbEntries = d.filter(e => e.platform === 'facebook');
-  goalValues['חשיפות ממוצעות לפוסט FB'] = fbEntries.length > 0
-    ? Math.round(fbEntries.reduce((s, e) => s + e.reach, 0) / fbEntries.length) : 0;
-
   const dbGoals = window._campaignGoals || [];
-  const goals = dbGoals.map(g => ({
-    name: g.name,
-    current: goalValues[g.name] || 0,
-    target: g.target_value
-  }));
 
-  const goalsSection = document.querySelector('.goals-section');
-  // Hide goals section if no goals defined for this campaign
-  if (goals.length === 0) {
-    if (goalsSection) goalsSection.style.display = 'none';
-    return;
+  // Split into primary and secondary
+  const primary = dbGoals.filter(g => g.goal_type !== 'platform_metric');
+  const secondary = dbGoals.filter(g => g.goal_type === 'platform_metric');
+
+  // Primary goals section (first .goals-section that is NOT secondary)
+  const primarySection = document.querySelector('.goals-section:not(.goals-secondary-section)');
+  const primaryContainer = document.getElementById('primaryGoalsContainer');
+  if (primary.length === 0) {
+    if (primarySection) primarySection.style.display = 'none';
+  } else {
+    if (primarySection) primarySection.style.display = 'block';
+    primaryContainer.innerHTML = primary.map(g => renderGoalBar({
+      name: g.name,
+      current: computeGoalValue(g, d),
+      target: g.target_value
+    })).join('');
   }
-  if (goalsSection) goalsSection.style.display = 'block';
 
-  const container = document.getElementById('goalsContainer');
-  container.innerHTML = '';
-  goals.forEach(g => {
-    const pct = Math.min(100, Math.round(g.current / g.target * 100));
-    const cls = pct >= 100 ? 'background:var(--teal-400)' : pct >= 50 ? 'background:var(--blue-400)' : 'background:var(--amber-400)';
-    container.innerHTML += `<div class="goal-row"><div class="goal-header"><span class="goal-name">${g.name}</span><span class="goal-nums"><span>${g.current.toLocaleString()}</span> / ${g.target.toLocaleString()}</span></div><div class="goal-bar"><div class="goal-fill" style="width:${pct}%;${cls}"></div></div></div>`;
-  });
+  // Secondary goals section — grouped by platform
+  const secondarySection = document.querySelector('.goals-secondary-section');
+  const secondaryContainer = document.getElementById('secondaryGoalsContainer');
+  if (secondary.length === 0) {
+    if (secondarySection) secondarySection.style.display = 'none';
+  } else {
+    if (secondarySection) secondarySection.style.display = 'block';
+    // Group by platform_id
+    const grouped = {};
+    secondary.forEach(g => {
+      if (!grouped[g.platform_id]) grouped[g.platform_id] = [];
+      grouped[g.platform_id].push(g);
+    });
+    secondaryContainer.innerHTML = Object.entries(grouped).map(([pid, goals]) => {
+      const plat = CONFIG.getPlatform(pid);
+      const icon = plat ? plat.icon : '📊';
+      const name = plat ? plat.name : pid;
+      return `<div style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;display:flex;align-items:center;gap:6px">${icon} ${name}</div>` +
+        goals.map(g => {
+          const metric = plat ? plat.metrics.find(m => m.id === g.metric_id) : null;
+          const metricLabel = metric ? metric.label : g.metric_id;
+          return renderGoalBar({
+            name: metricLabel,
+            current: computeGoalValue(g, d),
+            target: g.target_value
+          });
+        }).join('') + '</div>';
+    }).join('');
+  }
 }
 
 function setChartEmptyState(canvasId, isEmpty) {

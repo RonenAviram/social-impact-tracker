@@ -43,7 +43,7 @@
 - **ארכיון קישורים:** עצמאי מפילטרי הגרפים
 - **גרפים:** ציר Y מציג רק מספרים שלמים
 - **עיתון מודפס:** מוחרג מכל הגרפים/מדדים אלא אם הוא הפלטפורמה היחידה שנבחרה בפילטר
-- **יעדים:** מוצגים רק אם הוגדרו ב-campaign_goals
+- **יעדים:** דו-שכבתיים — ראשיים (כלליים: חשיפות, אינטראקציות, תכנים, משתתפים, פלטפורמות) + משניים (לפי פלטפורמה+מדד). ממשק מובנה (dropdowns), לא טקסט חופשי. חישוב בדשבורד לפי goal_type/platform_id/metric_id. מוצגים רק אם הוגדרו.
 - **כפתור העתקת קישור טופס:** באזור ניהול, מעתיק URL עם campaign parameter
 
 ## Hosting
@@ -56,20 +56,27 @@
 - לא לבקש אישור לפני קומיט
 - פוש דרך CLI (sandbox חוסם git push — המשתמש מריץ ידנית)
 
-## SQL Migrations (כולם הורצו)
+## SQL Migrations (כולם הורצו אלא אם צוין אחרת)
 - `supabase_migration.sql` — סכמה מלאה + seed data
 - `supabase_bugfix_migration.sql` — DELETE RLS policy על organizations
 - `supabase_fix_password_hash.sql` — סנכרון hash סיסמה (0 rows affected)
 - `supabase_uat_fixes.sql` — UPSERT למדדים + unique constraint + ניקוי כפילויות
 - `campaigns_delete` policy — הורץ ידנית (לא בקובץ)
+- `supabase_goals_migration.sql` — ⏳ **ממתין להרצה** — הרחבת campaign_goals עם goal_type, platform_id, metric_id
 
 ## סטטוס (2026-08-12)
-- ✅ 22 באגים/שיפורים תוקנו (QA + UAT 4 סבבים)
+- ✅ 24 באגים/שיפורים תוקנו (QA + UAT 4 סבבים + 5 נוספים)
 - ✅ 14/14 בדיקות אוטומטיות עוברות
 - ✅ Multi-campaign support
 - ✅ סיסמת מנהל מסונכרנת
 - ✅ מחיקת קמפיינים
-- 🔄 טסטים ידניים סופיים לפני העברה למיכל
+- ✅ עיתון מודפס מוחרג מגרפים כלליים
+- ✅ Timeline chart מבוסס snapshots עם carry-forward
+- ✅ form.html try/catch למניעת תקיעה במובייל
+- ✅ 3 קומיטים נדחפו בהצלחה ל-GitHub
+- ✅ ממשק יעדים מובנה (ראשיים + משניים לפי פלטפורמה)
+- ⚠️ supabase_goals_migration.sql + supabase_fix_password_hash.sql ממתינים להרצה
+- 🔄 הכנת סביבת UAT למיכל פרינס
 - ⏳ UAT עם מיכל פרינס
 - ⏳ Handoff: fork + Supabase migration לארגון
 

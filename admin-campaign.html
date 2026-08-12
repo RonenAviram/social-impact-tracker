@@ -96,11 +96,21 @@ textarea{resize:vertical;min-height:60px}
 /* Goals section */
 .goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:500px){.goals-grid{grid-template-columns:1fr}}
-.goal-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-100)}
+.goal-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-100);margin-bottom:8px}
 .goal-item .goal-icon{font-size:20px;flex-shrink:0}
 .goal-item .goal-label{font-size:12px;color:var(--gray-500);margin-bottom:2px}
-.goal-item input{width:80px;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;font-family:inherit;text-align:center;direction:ltr}
+.goal-item .goal-name{flex:1;font-size:14px;font-weight:500;color:var(--gray-700)}
+.goal-item input{width:100px;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;font-family:inherit;text-align:center;direction:ltr}
 .goal-item input:focus{outline:none;border-color:var(--blue-400)}
+.goal-item select{flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;background:#fff;color:var(--gray-700)}
+.goal-item select:focus{outline:none;border-color:var(--blue-400)}
+.goals-subsection{margin-bottom:16px}
+.goals-subsection-title{font-size:14px;font-weight:600;color:var(--blue-800);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.goals-subsection-title .sub-icon{font-size:16px}
+.goal-add-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.goal-add-row select{flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
+.platform-goal-group{margin-bottom:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);border:1px solid var(--gray-100)}
+.platform-goal-header{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 
 /* Summary */
 .summary-card{background:var(--blue-50);border:1.5px solid var(--blue-200);border-radius:var(--radius);padding:20px;margin-bottom:16px}
@@ -319,11 +329,34 @@ textarea{resize:vertical;min-height:60px}
   <div class="section" id="sec3">
     <div class="card">
       <div class="card-title">יעדים (אופציונלי)</div>
-      <div class="card-sub">עד 3 יעדים מספריים — יוצגו בדשבורד כאחוז השגה. ייקבעו בפגישת האפיון.</div>
+      <div class="card-sub">הגדירו יעדים מספריים לקמפיין — יוצגו בדשבורד כאחוז השגה. כל היעדים אופציונליים.</div>
 
-      <div id="goalsContainer"></div>
+      <!-- Primary goals -->
+      <div class="goals-subsection">
+        <div class="goals-subsection-title"><span class="sub-icon">🎯</span> יעדים ראשיים</div>
+        <div id="primaryGoalsContainer"></div>
+        <div class="goal-add-row">
+          <select id="addPrimarySelect">
+            <option value="">בחרו יעד להוספה...</option>
+          </select>
+          <button class="add-btn" onclick="addPrimaryGoal()" style="white-space:nowrap">+ הוספה</button>
+        </div>
+      </div>
 
-      <button class="add-btn" id="addGoalBtn" onclick="addGoal()" style="width:100%;justify-content:center;margin-top:8px">+ הוספת יעד</button>
+      <!-- Secondary goals (per platform) -->
+      <div class="goals-subsection">
+        <div class="goals-subsection-title"><span class="sub-icon">📊</span> יעדים לפי פלטפורמה</div>
+        <div id="secondaryGoalsContainer"></div>
+        <div class="goal-add-row">
+          <select id="addPlatformSelect" onchange="updateMetricSelect()">
+            <option value="">בחרו פלטפורמה...</option>
+          </select>
+          <select id="addMetricSelect" disabled>
+            <option value="">בחרו מדד...</option>
+          </select>
+          <button class="add-btn" onclick="addSecondaryGoal()" style="white-space:nowrap">+ הוספה</button>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -545,31 +578,125 @@ function importFromPool() {
 }
 
 // === GOALS ===
-let goals = [
-  {name: '', value: ''},
+const PRIMARY_GOAL_TYPES = [
+  { type: 'total_reach', label: 'חשיפות כוללות', icon: '👁️' },
+  { type: 'total_engagement', label: 'אינטראקציות כוללות', icon: '💬' },
+  { type: 'total_content', label: 'כמות תכנים', icon: '📝' },
+  { type: 'active_participants', label: 'משתתפים פעילים', icon: '👥' },
+  { type: 'active_platforms', label: 'כמות פלטפורמות', icon: '📱' }
 ];
-const MAX_GOALS = 3;
+
+let primaryGoals = []; // [{type, label, icon, value}]
+let secondaryGoals = []; // [{platform_id, platformName, platformIcon, metric_id, metricLabel, value}]
 
 function renderGoals() {
-  const container = document.getElementById('goalsContainer');
-  container.innerHTML = goals.map((g, i) => `
-    <div class="goal-item" style="margin-bottom:8px">
-      <input type="text" value="${g.name}" placeholder="שם היעד" style="flex:1;width:auto" onchange="goals[${i}].name=this.value">
-      <input type="number" value="${g.value}" placeholder="ערך מספרי" style="width:100px" onchange="goals[${i}].value=Number(this.value)">
-      <button class="remove-btn" onclick="removeGoal(${i})" title="הסרה">×</button>
-    </div>
-  `).join('');
-  document.getElementById('addGoalBtn').style.display = goals.length >= MAX_GOALS ? 'none' : 'flex';
+  renderPrimaryGoals();
+  renderSecondaryGoals();
+  populatePrimarySelect();
+  populatePlatformSelect();
 }
 
-function addGoal() {
-  if (goals.length >= MAX_GOALS) return;
-  goals.push({name: '', value: ''});
+function renderPrimaryGoals() {
+  const c = document.getElementById('primaryGoalsContainer');
+  c.innerHTML = primaryGoals.map((g, i) => `
+    <div class="goal-item">
+      <span class="goal-icon">${g.icon}</span>
+      <span class="goal-name">${g.label}</span>
+      <input type="number" value="${g.value || ''}" placeholder="יעד" onchange="primaryGoals[${i}].value=Number(this.value)">
+      <button class="remove-btn" onclick="removePrimaryGoal(${i})" title="הסרה">×</button>
+    </div>
+  `).join('');
+}
+
+function renderSecondaryGoals() {
+  const c = document.getElementById('secondaryGoalsContainer');
+  // Group by platform
+  const grouped = {};
+  secondaryGoals.forEach((g, i) => {
+    if (!grouped[g.platform_id]) grouped[g.platform_id] = { name: g.platformName, icon: g.platformIcon, goals: [] };
+    grouped[g.platform_id].goals.push({ ...g, idx: i });
+  });
+  c.innerHTML = Object.entries(grouped).map(([pid, group]) => `
+    <div class="platform-goal-group">
+      <div class="platform-goal-header">${group.icon} ${group.name}</div>
+      ${group.goals.map(g => `
+        <div class="goal-item">
+          <span class="goal-name">${g.metricLabel}</span>
+          <input type="number" value="${g.value || ''}" placeholder="יעד" onchange="secondaryGoals[${g.idx}].value=Number(this.value)">
+          <button class="remove-btn" onclick="removeSecondaryGoal(${g.idx})" title="הסרה">×</button>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function populatePrimarySelect() {
+  const sel = document.getElementById('addPrimarySelect');
+  const used = new Set(primaryGoals.map(g => g.type));
+  sel.innerHTML = '<option value="">בחרו יעד להוספה...</option>' +
+    PRIMARY_GOAL_TYPES.filter(t => !used.has(t.type)).map(t =>
+      `<option value="${t.type}">${t.icon} ${t.label}</option>`
+    ).join('');
+}
+
+function populatePlatformSelect() {
+  const sel = document.getElementById('addPlatformSelect');
+  sel.innerHTML = '<option value="">בחרו פלטפורמה...</option>' +
+    CONFIG.PLATFORMS.map(p => `<option value="${p.id}">${p.icon} ${p.name}</option>`).join('');
+  document.getElementById('addMetricSelect').innerHTML = '<option value="">בחרו מדד...</option>';
+  document.getElementById('addMetricSelect').disabled = true;
+}
+
+function updateMetricSelect() {
+  const platformId = document.getElementById('addPlatformSelect').value;
+  const metricSel = document.getElementById('addMetricSelect');
+  if (!platformId) {
+    metricSel.innerHTML = '<option value="">בחרו מדד...</option>';
+    metricSel.disabled = true;
+    return;
+  }
+  const plat = CONFIG.getPlatform(platformId);
+  // Filter out already-added metrics for this platform
+  const used = new Set(secondaryGoals.filter(g => g.platform_id === platformId).map(g => g.metric_id));
+  const available = plat.metrics.filter(m => !used.has(m.id));
+  metricSel.innerHTML = '<option value="">בחרו מדד...</option>' +
+    available.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+  metricSel.disabled = available.length === 0;
+}
+
+function addPrimaryGoal() {
+  const sel = document.getElementById('addPrimarySelect');
+  const type = sel.value;
+  if (!type) return;
+  const def = PRIMARY_GOAL_TYPES.find(t => t.type === type);
+  primaryGoals.push({ type: def.type, label: def.label, icon: def.icon, value: '' });
   renderGoals();
 }
 
-function removeGoal(idx) {
-  goals.splice(idx, 1);
+function removePrimaryGoal(idx) {
+  primaryGoals.splice(idx, 1);
+  renderGoals();
+}
+
+function addSecondaryGoal() {
+  const platformId = document.getElementById('addPlatformSelect').value;
+  const metricId = document.getElementById('addMetricSelect').value;
+  if (!platformId || !metricId) return;
+  const plat = CONFIG.getPlatform(platformId);
+  const metric = plat.metrics.find(m => m.id === metricId);
+  secondaryGoals.push({
+    platform_id: platformId,
+    platformName: plat.name,
+    platformIcon: plat.icon,
+    metric_id: metricId,
+    metricLabel: metric.label,
+    value: ''
+  });
+  renderGoals();
+}
+
+function removeSecondaryGoal(idx) {
+  secondaryGoals.splice(idx, 1);
   renderGoals();
 }
 
@@ -584,9 +711,12 @@ function buildSummary() {
 
   const uniqueOrgs = [...new Set(participants.map(p => p.org))];
 
-  const activeGoals = goals.filter(g => g.name && g.value);
-  const goalsHtml = activeGoals.length
-    ? `<div class="summary-row"><span class="sr-label">יעדים</span><span class="sr-value">${activeGoals.map(g => g.name + ': ' + Number(g.value).toLocaleString()).join(' · ')}</span></div>`
+  const allGoals = [
+    ...primaryGoals.filter(g => g.value).map(g => g.label + ': ' + Number(g.value).toLocaleString()),
+    ...secondaryGoals.filter(g => g.value).map(g => g.platformName + ' — ' + g.metricLabel + ': ' + Number(g.value).toLocaleString())
+  ];
+  const goalsHtml = allGoals.length
+    ? `<div class="summary-row"><span class="sr-label">יעדים</span><span class="sr-value">${allGoals.join(' · ')}</span></div>`
     : '';
 
   const isVisible = document.getElementById('campVisible').checked;
@@ -669,15 +799,32 @@ async function launchCampaign() {
       if (cpErr) throw cpErr;
     }
 
-    // 4. Add goals
-    const activeGoals = goals.filter(g => g.name && g.value);
-    if (activeGoals.length > 0) {
-      const goalRows = activeGoals.map((g, i) => ({
+    // 4. Add goals (primary + secondary)
+    const goalRows = [];
+    let sortIdx = 0;
+    primaryGoals.filter(g => g.value).forEach(g => {
+      goalRows.push({
         campaign_id: campaignId,
-        name: g.name,
+        name: g.label,
+        goal_type: g.type,
+        platform_id: null,
+        metric_id: null,
         target_value: Number(g.value),
-        sort_order: i + 1
-      }));
+        sort_order: ++sortIdx
+      });
+    });
+    secondaryGoals.filter(g => g.value).forEach(g => {
+      goalRows.push({
+        campaign_id: campaignId,
+        name: g.platformName + ' — ' + g.metricLabel,
+        goal_type: 'platform_metric',
+        platform_id: g.platform_id,
+        metric_id: g.metric_id,
+        target_value: Number(g.value),
+        sort_order: ++sortIdx
+      });
+    });
+    if (goalRows.length > 0) {
       const { error: gErr } = await db.from('campaign_goals').insert(goalRows);
       if (gErr) throw gErr;
     }
