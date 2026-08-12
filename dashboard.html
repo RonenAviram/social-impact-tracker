@@ -63,7 +63,7 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .metric-card .accent{position:absolute;top:0;left:0;right:0;height:3px}
 
 /* Goals */
-.goals-section{background:#fff;border-radius:var(--radius);padding:18px 20px;border:1px solid var(--gray-200);margin-bottom:20px}
+.goals-section{background:#fff;border-radius:var(--radius);padding:18px 20px;border:1px solid var(--gray-200);margin-bottom:20px;position:relative}
 .section-title{font-size:15px;font-weight:600;color:var(--blue-800);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .goal-row{margin-bottom:14px}
 .goal-row:last-child{margin-bottom:0}
@@ -73,6 +73,19 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .goal-nums span{font-weight:600;color:var(--blue-800)}
 .goal-bar{height:8px;background:var(--gray-100);border-radius:4px;overflow:hidden}
 .goal-fill{height:100%;border-radius:4px;transition:width 1s ease}
+/* Goals edit mode */
+.goals-edit-bar{display:none;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+body.admin-mode .goals-edit-bar{display:flex}
+.goals-edit-bar select{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;background:#fff}
+.goals-edit-bar select:focus{border-color:var(--blue-400);outline:none}
+.goal-edit-btn{padding:5px 12px;border:1.5px solid var(--blue-200);border-radius:6px;background:var(--blue-50);color:var(--blue-600);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.goal-edit-btn:hover{background:var(--blue-400);color:#fff;border-color:var(--blue-400)}
+.goal-edit-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.goal-edit-row input{width:90px;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;text-align:center;direction:ltr;font-family:inherit}
+.goal-edit-row input:focus{border-color:var(--blue-400);outline:none}
+.goal-edit-row .goal-edit-label{flex:1;font-size:13px;color:var(--gray-700)}
+.goal-edit-remove{width:24px;height:24px;border:none;background:transparent;color:var(--gray-400);cursor:pointer;font-size:14px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.goal-edit-remove:hover{background:var(--red-50);color:var(--red-400)}
 
 /* Charts */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
@@ -262,13 +275,22 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
   </div>
 
   <!-- Goals -->
-  <div class="goals-section" style="position:relative;display:none">
-    <div class="section-title">יעדים ראשיים</div>
+  <div class="goals-section" style="display:none">
+    <div class="section-title">🎯 יעדים ראשיים</div>
     <div id="primaryGoalsContainer"></div>
+    <div class="goals-edit-bar" id="primaryGoalsEditBar">
+      <select id="dashAddPrimarySelect"><option value="">+ הוספת יעד...</option></select>
+      <button class="goal-edit-btn" onclick="dashAddPrimaryGoal()">הוספה</button>
+    </div>
   </div>
-  <div class="goals-section goals-secondary-section" style="position:relative;display:none">
-    <div class="section-title">יעדים לפי פלטפורמה</div>
+  <div class="goals-section goals-secondary-section" style="display:none">
+    <div class="section-title">📊 יעדים לפי פלטפורמה</div>
     <div id="secondaryGoalsContainer"></div>
+    <div class="goals-edit-bar" id="secondaryGoalsEditBar">
+      <select id="dashAddPlatformSelect" onchange="dashUpdateMetricSelect()"><option value="">פלטפורמה...</option></select>
+      <select id="dashAddMetricSelect" disabled><option value="">מדד...</option></select>
+      <button class="goal-edit-btn" onclick="dashAddSecondaryGoal()">הוספה</button>
+    </div>
   </div>
 
   <!-- Charts -->
@@ -633,7 +655,11 @@ function computeGoalValue(goal, data) {
 function renderGoalBar(g) {
   const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
   const cls = pct >= 100 ? 'background:var(--teal-400)' : pct >= 50 ? 'background:var(--blue-400)' : 'background:var(--amber-400)';
-  return `<div class="goal-row"><div class="goal-header"><span class="goal-name">${g.name}</span><span class="goal-nums"><span>${g.current.toLocaleString()}</span> / ${g.target.toLocaleString()}</span></div><div class="goal-bar"><div class="goal-fill" style="width:${pct}%;${cls}"></div></div></div>`;
+  const isAdmin = document.body.classList.contains('admin-mode');
+  const editControls = isAdmin && g.goalId
+    ? `<div class="goal-edit-row" style="margin-top:6px"><span class="goal-edit-label">ערך יעד:</span><input type="number" value="${g.target}" onchange="dashUpdateGoalValue('${g.goalId}',Number(this.value))"><button class="goal-edit-remove" onclick="dashDeleteGoal('${g.goalId}')" title="הסרת יעד">×</button></div>`
+    : '';
+  return `<div class="goal-row"><div class="goal-header"><span class="goal-name">${g.name}</span><span class="goal-nums"><span>${g.current.toLocaleString()}</span> / ${g.target.toLocaleString()}</span></div><div class="goal-bar"><div class="goal-fill" style="width:${pct}%;${cls}"></div></div>${editControls}</div>`;
 }
 
 function renderGoals() {
@@ -644,24 +670,27 @@ function renderGoals() {
   const primary = dbGoals.filter(g => g.goal_type !== 'platform_metric');
   const secondary = dbGoals.filter(g => g.goal_type === 'platform_metric');
 
+  const isAdmin = document.body.classList.contains('admin-mode');
+
   // Primary goals section (first .goals-section that is NOT secondary)
   const primarySection = document.querySelector('.goals-section:not(.goals-secondary-section)');
   const primaryContainer = document.getElementById('primaryGoalsContainer');
-  if (primary.length === 0) {
+  if (primary.length === 0 && !isAdmin) {
     if (primarySection) primarySection.style.display = 'none';
   } else {
     if (primarySection) primarySection.style.display = 'block';
     primaryContainer.innerHTML = primary.map(g => renderGoalBar({
       name: g.name,
       current: computeGoalValue(g, d),
-      target: g.target_value
+      target: g.target_value,
+      goalId: g.id
     })).join('');
   }
 
   // Secondary goals section — grouped by platform
   const secondarySection = document.querySelector('.goals-secondary-section');
   const secondaryContainer = document.getElementById('secondaryGoalsContainer');
-  if (secondary.length === 0) {
+  if (secondary.length === 0 && !isAdmin) {
     if (secondarySection) secondarySection.style.display = 'none';
   } else {
     if (secondarySection) secondarySection.style.display = 'block';
@@ -682,11 +711,131 @@ function renderGoals() {
           return renderGoalBar({
             name: metricLabel,
             current: computeGoalValue(g, d),
-            target: g.target_value
+            target: g.target_value,
+            goalId: g.id
           });
         }).join('') + '</div>';
     }).join('');
   }
+
+  // Populate edit dropdowns when in admin mode
+  if (isAdmin) populateGoalEditDropdowns();
+}
+
+// === GOALS ADMIN EDITING ===
+const DASH_PRIMARY_TYPES = [
+  { type: 'total_reach', label: 'חשיפות כוללות', icon: '👁️' },
+  { type: 'total_engagement', label: 'אינטראקציות כוללות', icon: '💬' },
+  { type: 'total_content', label: 'כמות תכנים', icon: '📝' },
+  { type: 'active_participants', label: 'משתתפים פעילים', icon: '👥' },
+  { type: 'active_platforms', label: 'כמות פלטפורמות', icon: '📱' }
+];
+
+function populateGoalEditDropdowns() {
+  const dbGoals = window._campaignGoals || [];
+  const usedPrimary = new Set(dbGoals.filter(g => g.goal_type !== 'platform_metric').map(g => g.goal_type));
+  const pSel = document.getElementById('dashAddPrimarySelect');
+  if (pSel) {
+    pSel.innerHTML = '<option value="">+ הוספת יעד...</option>' +
+      DASH_PRIMARY_TYPES.filter(t => !usedPrimary.has(t.type)).map(t =>
+        `<option value="${t.type}">${t.icon} ${t.label}</option>`).join('');
+  }
+  const platSel = document.getElementById('dashAddPlatformSelect');
+  if (platSel) {
+    platSel.innerHTML = '<option value="">פלטפורמה...</option>' +
+      CONFIG.PLATFORMS.map(p => `<option value="${p.id}">${p.icon} ${p.name}</option>`).join('');
+  }
+  const metSel = document.getElementById('dashAddMetricSelect');
+  if (metSel) { metSel.innerHTML = '<option value="">מדד...</option>'; metSel.disabled = true; }
+}
+
+function dashUpdateMetricSelect() {
+  const pid = document.getElementById('dashAddPlatformSelect').value;
+  const metSel = document.getElementById('dashAddMetricSelect');
+  if (!pid) { metSel.innerHTML = '<option value="">מדד...</option>'; metSel.disabled = true; return; }
+  const plat = CONFIG.getPlatform(pid);
+  const dbGoals = window._campaignGoals || [];
+  const used = new Set(dbGoals.filter(g => g.platform_id === pid).map(g => g.metric_id));
+  const avail = plat.metrics.filter(m => !used.has(m.id));
+  metSel.innerHTML = '<option value="">מדד...</option>' +
+    avail.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+  metSel.disabled = avail.length === 0;
+}
+
+async function dashAddPrimaryGoal() {
+  const sel = document.getElementById('dashAddPrimarySelect');
+  const type = sel.value;
+  if (!type) return;
+  const def = DASH_PRIMARY_TYPES.find(t => t.type === type);
+  const val = prompt('הזיני ערך יעד עבור ' + def.label + ':');
+  if (!val || Number(val) <= 0) return;
+  const db = CONFIG.db();
+  const { error } = await db.from('campaign_goals').insert({
+    campaign_id: activeCampaignId,
+    name: def.label,
+    goal_type: def.type,
+    platform_id: null,
+    metric_id: null,
+    target_value: Number(val),
+    sort_order: (window._campaignGoals || []).length + 1
+  });
+  if (error) { showToast('שגיאה בשמירה'); console.error(error); return; }
+  await reloadGoals();
+  showToast('יעד נוסף');
+}
+
+async function dashAddSecondaryGoal() {
+  const pid = document.getElementById('dashAddPlatformSelect').value;
+  const mid = document.getElementById('dashAddMetricSelect').value;
+  if (!pid || !mid) return;
+  const plat = CONFIG.getPlatform(pid);
+  const metric = plat.metrics.find(m => m.id === mid);
+  const val = prompt('הזיני ערך יעד עבור ' + plat.name + ' — ' + metric.label + ':');
+  if (!val || Number(val) <= 0) return;
+  const db = CONFIG.db();
+  const { error } = await db.from('campaign_goals').insert({
+    campaign_id: activeCampaignId,
+    name: plat.name + ' — ' + metric.label,
+    goal_type: 'platform_metric',
+    platform_id: pid,
+    metric_id: mid,
+    target_value: Number(val),
+    sort_order: (window._campaignGoals || []).length + 1
+  });
+  if (error) { showToast('שגיאה בשמירה'); console.error(error); return; }
+  await reloadGoals();
+  showToast('יעד נוסף');
+}
+
+async function dashUpdateGoalValue(goalId, newValue) {
+  if (!newValue || newValue <= 0) return;
+  const db = CONFIG.db();
+  const { error } = await db.from('campaign_goals').update({ target_value: newValue }).eq('id', goalId);
+  if (error) { showToast('שגיאה בעדכון'); console.error(error); return; }
+  // Update local cache
+  const g = (window._campaignGoals || []).find(g => g.id === goalId);
+  if (g) g.target_value = newValue;
+  renderGoals();
+}
+
+async function dashDeleteGoal(goalId) {
+  if (!confirm('להסיר יעד זה?')) return;
+  const db = CONFIG.db();
+  const { error } = await db.from('campaign_goals').delete().eq('id', goalId);
+  if (error) { showToast('שגיאה במחיקה'); console.error(error); return; }
+  await reloadGoals();
+  showToast('יעד הוסר');
+}
+
+async function reloadGoals() {
+  const db = CONFIG.db();
+  const { data } = await db.from('campaign_goals')
+    .select('*')
+    .eq('campaign_id', activeCampaignId)
+    .order('sort_order');
+  window._campaignGoals = data || [];
+  renderGoals();
+  populateGoalEditDropdowns();
 }
 
 function setChartEmptyState(canvasId, isEmpty) {
@@ -1115,6 +1264,7 @@ async function toggleAdmin() {
   document.getElementById('dataTable').classList.toggle('show', show);
   document.body.classList.toggle('admin-mode', show);
   renderCampaignDropdown();
+  renderGoals(); // refresh goals to show/hide edit controls
 }
 
 async function updateCampStatusDB(newStatus) {
