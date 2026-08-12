@@ -226,11 +226,18 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 
 <div class="main">
 
+  <div id="campaignFilterChips" style="display:none;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:12px;color:var(--gray-500);font-weight:500">סינון קמפיינים:</span>
+    <button class="filter-chip active" data-cf="active" onclick="setCampaignFilter('active',this)">🟢 פעילים</button>
+    <button class="filter-chip" data-cf="all" onclick="setCampaignFilter('all',this)">הכל</button>
+    <button class="filter-chip" data-cf="recent" onclick="setCampaignFilter('recent',this)">3 אחרונים</button>
+  </div>
+
   <div class="admin-panel" id="adminPanel">
     <div class="section-title">ניהול</div>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <a href="admin-campaign.html" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--blue-400)">➕ קמפיין חדש</a>
-      <a href="admin-pool.html" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--teal-400)">👥 ניהול מאגר</a>
+      <a href="admin-campaign.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--blue-400)">➕ קמפיין חדש</a>
+      <a href="admin-pool.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--teal-400)">👥 ניהול מאגר</a>
       <button class="admin-btn" style="background:var(--gray-600)" onclick="exportCSV()">📥 ייצוא CSV</button>
     </div>
     <div class="admin-grid">
@@ -355,14 +362,51 @@ function getActiveCampaignId() {
 }
 let activeCampaignId = getActiveCampaignId();
 
-// Load all campaigns into dropdown
+// Campaign list and filtering
+let allCampaigns = [];
+let campaignFilter = 'active'; // 'active' | 'all' | 'recent'
+
+const STATUS_ICON = { active: '🟢', paused: '🟡', ended: '🔴' };
+const STATUS_LABEL = { active: 'פעיל', paused: 'מושהה', ended: 'הסתיים' };
+
 async function loadCampaignDropdown() {
   const db = CONFIG.db();
   if (!db) return;
-  const { data: camps } = await db.from('campaigns').select('id, name, status').order('created_at', { ascending: false });
+  const { data: camps } = await db.from('campaigns').select('id, name, status, created_at').order('created_at', { ascending: false });
   if (!camps || camps.length === 0) return;
+  allCampaigns = camps;
+  renderCampaignDropdown();
+}
+
+function renderCampaignDropdown() {
+  const isAdmin = document.getElementById('adminCheck').checked;
   const sel = document.getElementById('topicSelect');
-  sel.innerHTML = camps.map(c => `<option value="${c.id}" ${c.id === activeCampaignId ? 'selected' : ''}>${c.name}</option>`).join('');
+
+  let filtered = allCampaigns;
+  if (!isAdmin) {
+    // Non-admin: only active campaigns
+    filtered = allCampaigns.filter(c => c.status === 'active');
+  } else if (campaignFilter === 'active') {
+    filtered = allCampaigns.filter(c => c.status === 'active');
+  } else if (campaignFilter === 'recent') {
+    filtered = allCampaigns.slice(0, 3);
+  }
+  // 'all' = no filter
+
+  // If current campaign not in filtered list, add it
+  if (!filtered.find(c => c.id === activeCampaignId)) {
+    const current = allCampaigns.find(c => c.id === activeCampaignId);
+    if (current) filtered = [current, ...filtered];
+  }
+
+  sel.innerHTML = filtered.map(c => {
+    const prefix = isAdmin ? STATUS_ICON[c.status] + ' ' : '';
+    return `<option value="${c.id}" ${c.id === activeCampaignId ? 'selected' : ''}>${prefix}${c.name}</option>`;
+  }).join('');
+
+  // Show/hide campaign filter chips
+  const chipBar = document.getElementById('campaignFilterChips');
+  if (chipBar) chipBar.style.display = isAdmin ? 'flex' : 'none';
 }
 
 // Load data from Supabase
@@ -945,11 +989,16 @@ async function toggleAdmin() {
   document.getElementById('adminPanel').classList.toggle('show', show);
   document.getElementById('dataTable').classList.toggle('show', show);
   document.body.classList.toggle('admin-mode', show);
+  renderCampaignDropdown();
 }
 
 async function updateCampStatusDB(newStatus) {
   const db = CONFIG.db();
   await db.from('campaigns').update({ status: newStatus }).eq('id', activeCampaignId);
+  // Sync local cache
+  const camp = allCampaigns.find(c => c.id === activeCampaignId);
+  if (camp) camp.status = newStatus;
+  renderCampaignDropdown();
 }
 
 function updateCampStatus(forceStatus) {
@@ -1006,9 +1055,22 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// Campaign filter
+function setCampaignFilter(filter, btn) {
+  campaignFilter = filter;
+  document.querySelectorAll('#campaignFilterChips .filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderCampaignDropdown();
+}
+
 // Topic switcher
 function changeTopic() {
   activeCampaignId = document.getElementById('topicSelect').value;
+  // Update status dropdown to match selected campaign
+  const camp = allCampaigns.find(c => c.id === activeCampaignId);
+  if (camp) {
+    document.getElementById('campStatusSelect').value = camp.status;
+  }
   loadDashboardData();
 }
 

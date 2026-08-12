@@ -242,7 +242,8 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
         </div>
         <div class="field link-field">
           <label>קישור לתוכן <span style="color:var(--red-400)">*</span></label>
-          <input type="url" id="uploadLink" placeholder="https://...">
+          <input type="url" id="uploadLink" placeholder="הדביקו קישור מלא, למשל https://facebook.com/...">
+          <div id="linkHint" style="font-size:11px;color:var(--gray-400);margin-top:4px">יש להזין קישור מלא שמתחיל ב-https://</div>
         </div>
         <div class="field">
           <label>תאריך העלאה</label>
@@ -706,13 +707,23 @@ function validateCurrentStep() {
   const link = document.getElementById('uploadLink').value.trim();
   const date = document.getElementById('uploadDate').value;
   const linkInput = document.getElementById('uploadLink');
+  const hint = document.getElementById('linkHint');
 
   if (link && !isValidUrl(link)) {
     linkInput.style.borderColor = 'var(--red-400)';
+    hint.textContent = 'הקישור חייב להתחיל ב-https:// או http://';
+    hint.style.color = 'var(--red-400)';
+    document.getElementById('btnNextPlatform').disabled = true;
+  } else if (!link) {
+    linkInput.style.borderColor = '';
+    hint.textContent = 'יש להזין קישור מלא שמתחיל ב-https://';
+    hint.style.color = 'var(--gray-400)';
     document.getElementById('btnNextPlatform').disabled = true;
   } else {
-    linkInput.style.borderColor = '';
-    document.getElementById('btnNextPlatform').disabled = !link || !date;
+    linkInput.style.borderColor = 'var(--teal-400)';
+    hint.textContent = '✓ קישור תקין';
+    hint.style.color = 'var(--teal-600)';
+    document.getElementById('btnNextPlatform').disabled = !date;
   }
 }
 
