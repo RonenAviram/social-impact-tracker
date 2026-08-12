@@ -629,6 +629,7 @@ async function launchCampaign() {
     const { data: existingCamp } = await db.from('campaigns')
       .select('admin_password_hash')
       .not('admin_password_hash', 'is', null)
+      .order('updated_at', { ascending: false })
       .limit(1)
       .single();
     const adminHash = existingCamp ? existingCamp.admin_password_hash : null;
