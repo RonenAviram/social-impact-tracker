@@ -449,10 +449,13 @@ async function loadDashboardData() {
   // Load campaign info
   const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
   if (campData) {
-    const selOpt = document.querySelector('#topicSelect option[value="' + activeCampaignId + '"]');
-    if (selOpt) selOpt.textContent = campData.name;
+    // Update local cache and re-render dropdown (preserves status icons)
+    const localCamp = allCampaigns.find(c => c.id === activeCampaignId);
+    if (localCamp) { localCamp.name = campData.name; localCamp.status = campData.status; }
+    renderCampaignDropdown();
     if (campData.status === 'ended') updateCampStatus('ended');
     else if (campData.status === 'paused') updateCampStatus('paused');
+    else updateCampStatus('active');
   }
 
   // Load goals
