@@ -280,6 +280,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <div id="primaryGoalsContainer"></div>
     <div class="goals-edit-bar" id="primaryGoalsEditBar">
       <select id="dashAddPrimarySelect"><option value="">+ הוספת יעד...</option></select>
+      <input type="number" id="dashPrimaryValue" placeholder="יעד" style="width:90px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;text-align:center;direction:ltr;font-family:inherit">
       <button class="goal-edit-btn" onclick="dashAddPrimaryGoal()">הוספה</button>
     </div>
   </div>
@@ -289,6 +290,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <div class="goals-edit-bar" id="secondaryGoalsEditBar">
       <select id="dashAddPlatformSelect" onchange="dashUpdateMetricSelect()"><option value="">פלטפורמה...</option></select>
       <select id="dashAddMetricSelect" disabled><option value="">מדד...</option></select>
+      <input type="number" id="dashSecondaryValue" placeholder="יעד" style="width:90px;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;text-align:center;direction:ltr;font-family:inherit">
       <button class="goal-edit-btn" onclick="dashAddSecondaryGoal()">הוספה</button>
     </div>
   </div>
@@ -765,10 +767,11 @@ function dashUpdateMetricSelect() {
 async function dashAddPrimaryGoal() {
   const sel = document.getElementById('dashAddPrimarySelect');
   const type = sel.value;
-  if (!type) return;
+  if (!type) { showToast('בחרו יעד'); return; }
+  const valInput = document.getElementById('dashPrimaryValue');
+  const val = valInput.value;
+  if (!val || Number(val) <= 0) { valInput.style.borderColor = 'var(--red-400)'; showToast('הזינו ערך מספרי'); return; }
   const def = DASH_PRIMARY_TYPES.find(t => t.type === type);
-  const val = prompt('הזיני ערך יעד עבור ' + def.label + ':');
-  if (!val || Number(val) <= 0) return;
   const db = CONFIG.db();
   const { error } = await db.from('campaign_goals').insert({
     campaign_id: activeCampaignId,
@@ -780,6 +783,8 @@ async function dashAddPrimaryGoal() {
     sort_order: (window._campaignGoals || []).length + 1
   });
   if (error) { showToast('שגיאה בשמירה'); console.error(error); return; }
+  valInput.value = '';
+  sel.value = '';
   await reloadGoals();
   showToast('יעד נוסף');
 }
@@ -787,11 +792,12 @@ async function dashAddPrimaryGoal() {
 async function dashAddSecondaryGoal() {
   const pid = document.getElementById('dashAddPlatformSelect').value;
   const mid = document.getElementById('dashAddMetricSelect').value;
-  if (!pid || !mid) return;
+  if (!pid || !mid) { showToast('בחרו פלטפורמה ומדד'); return; }
+  const valInput = document.getElementById('dashSecondaryValue');
+  const val = valInput.value;
+  if (!val || Number(val) <= 0) { valInput.style.borderColor = 'var(--red-400)'; showToast('הזינו ערך מספרי'); return; }
   const plat = CONFIG.getPlatform(pid);
   const metric = plat.metrics.find(m => m.id === mid);
-  const val = prompt('הזיני ערך יעד עבור ' + plat.name + ' — ' + metric.label + ':');
-  if (!val || Number(val) <= 0) return;
   const db = CONFIG.db();
   const { error } = await db.from('campaign_goals').insert({
     campaign_id: activeCampaignId,
@@ -803,6 +809,10 @@ async function dashAddSecondaryGoal() {
     sort_order: (window._campaignGoals || []).length + 1
   });
   if (error) { showToast('שגיאה בשמירה'); console.error(error); return; }
+  valInput.value = '';
+  document.getElementById('dashAddPlatformSelect').value = '';
+  document.getElementById('dashAddMetricSelect').innerHTML = '<option value="">מדד...</option>';
+  document.getElementById('dashAddMetricSelect').disabled = true;
   await reloadGoals();
   showToast('יעד נוסף');
 }
