@@ -24,15 +24,26 @@
 - **Seed Campaign ID:** 87ffac94-18ab-43e3-bedb-f7cc877973f8
 - **Admin password:** REDLINES2026 (SHA-256 hash, synced across all campaigns)
 - **Tables:** organizations, profiles, campaigns, campaign_participants, campaign_goals, content_entries, metrics_snapshots
-- **RPC Functions:** login_user, get_campaign_pool, get_all_profiles, verify_admin, add_content_entry, update_metrics, delete_content_entry, get_user_contents, get_dashboard_data, get_campaign
+- **RPC Functions:** login_user, get_campaign_pool, get_all_profiles, verify_admin, add_content_entry, update_metrics (UPSERT), delete_content_entry, get_user_contents, get_dashboard_data, get_campaign
+- **RLS:** SELECT/INSERT/UPDATE/DELETE על כל הטבלאות (כולל campaigns_delete שנוסף 2026-08-12)
 
 ## Multi-Campaign Support
 - URL parameter `?campaign=<UUID>` על form.html ו-dashboard.html
 - Fallback ל-CONFIG.CAMPAIGN_ID
 - Session כוללת campaignId — ניקוי אוטומטי בחוסר התאמה
 - Dashboard: allCampaigns[] cache + renderCampaignDropdown()
-- מנהל: אייקוני סטטוס (🟢🟡🔴) + chips פילטר
+- מנהל: אייקוני סטטוס (🟢🟡🔴) + chips פילטר צמודים לדרופדאון
 - קמפיין חדש יורש hash סיסמה מהקמפיין העדכני ביותר
+- מחיקת קמפיין: CASCADE על כל הנתונים (תכנים, מדדים, יעדים, משתתפים)
+
+## התנהגויות מפתח
+- **סיום קמפיין:** רק ידנית ע"י מנהל. end_date לא מסיים אוטומטית — מנהל מקבל התראה צהובה שהתאריך עבר
+- **הזנת תוכן בקמפיין לא פעיל:** כפתור disabled (לא alert), באנר מוצג
+- **עדכון מדדים:** UPSERT — עדכון שני באותו יום דורס את הקודם (unique constraint על content_entry_id + snapshot_date)
+- **ארכיון קישורים:** עצמאי מפילטרי הגרפים
+- **גרפים:** ציר Y מציג רק מספרים שלמים
+- **יעדים:** מוצגים רק אם הוגדרו ב-campaign_goals
+- **כפתור העתקת קישור טופס:** באזור ניהול, מעתיק URL עם campaign parameter
 
 ## Hosting
 - **Repo:** https://github.com/RonenAviram/social-impact-tracker
@@ -44,15 +55,22 @@
 - לא לבקש אישור לפני קומיט
 - פוש דרך CLI (sandbox חוסם git push — המשתמש מריץ ידנית)
 
+## SQL Migrations (כולם הורצו)
+- `supabase_migration.sql` — סכמה מלאה + seed data
+- `supabase_bugfix_migration.sql` — DELETE RLS policy על organizations
+- `supabase_fix_password_hash.sql` — סנכרון hash סיסמה (0 rows affected)
+- `supabase_uat_fixes.sql` — UPSERT למדדים + unique constraint + ניקוי כפילויות
+- `campaigns_delete` policy — הורץ ידנית (לא בקובץ)
+
 ## סטטוס (2026-08-12)
-- ✅ כל הבאגים תוקנו (16 באגים ב-QA + UAT)
+- ✅ 22 באגים/שיפורים תוקנו (QA + UAT 4 סבבים)
 - ✅ 14/14 בדיקות אוטומטיות עוברות
 - ✅ Multi-campaign support
-- ✅ סיסמת מנהל מסונכרנת (8 קמפיינים)
-- 🔄 UAT בתהליך
+- ✅ סיסמת מנהל מסונכרנת
+- ✅ מחיקת קמפיינים
+- 🔄 טסטים ידניים סופיים לפני העברה למיכל
 - ⏳ UAT עם מיכל פרינס
 - ⏳ Handoff: fork + Supabase migration לארגון
-- ⏳ ניקוי קמפייני בדיקה מה-DB
 
 ## כללים
 - "Demo = Product" — כל פיצ'ר חייב לעבוד בפרודקשן
