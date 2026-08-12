@@ -339,6 +339,7 @@ function getActiveCampaignId() {
 const activeCampaignId = getActiveCampaignId();
 
 async function init() {
+  try {
   const db = CONFIG.db();
   if (!db) { hideLoading(); showToast('שגיאה בחיבור למסד הנתונים'); return; }
 
@@ -413,6 +414,11 @@ async function init() {
     }
   }
   hideLoading();
+  } catch (err) {
+    console.error('Init error:', err);
+    hideLoading();
+    showToast('שגיאה בטעינה — נסו לרענן');
+  }
 }
 
 function today() { return new Date().toISOString().slice(0,10); }
