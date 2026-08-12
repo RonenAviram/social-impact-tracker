@@ -433,6 +433,7 @@ async function loadDashboardData() {
     const engagement = engIds.reduce((s, id) => s + (metrics[id] || 0), 0);
 
     return {
+      entryId: row.entry_id,
       date: row.upload_date,
       uploadDate: row.upload_date,
       person: { id: row.profile_id, name: row.profile_name, org: row.org_name },
@@ -459,6 +460,16 @@ async function loadDashboardData() {
 
     // Show end_date warning to admin if date has passed but campaign is still active
     showEndDateWarning(campData);
+  }
+
+  // Load all snapshots for timeline chart
+  const { data: snapshotsData } = await db.rpc('get_campaign_snapshots', { p_campaign_id: activeCampaignId });
+  window._allSnapshots = {};
+  if (snapshotsData) {
+    snapshotsData.forEach(s => {
+      if (!window._allSnapshots[s.entry_id]) window._allSnapshots[s.entry_id] = [];
+      window._allSnapshots[s.entry_id].push(s);
+    });
   }
 
   // Load goals
@@ -713,18 +724,41 @@ function renderCharts() {
     }
   });
 
-  // Timeline
-  const days = {};
-  d.forEach(e => { days[e.date] = (days[e.date] || 0) + e.reach; });
-  const sortedDays = Object.keys(days).sort();
-  let cum = 0;
-  const cumData = sortedDays.map(day => { cum += days[day]; return cum; });
+  // Timeline: reach progression based on snapshot dates
+  // For each snapshot date, sum the latest reach of each filtered entry up to that date
+  const allSnaps = window._allSnapshots || {};
+  const filteredEntrySnaps = {}; // entryId -> sorted snapshots
+  d.forEach(e => {
+    if (allSnaps[e.entryId]) filteredEntrySnaps[e.entryId] = { snaps: allSnaps[e.entryId], platform: e.platform };
+  });
+
+  // Collect all unique snapshot dates from filtered entries
+  const allDatesSet = new Set();
+  Object.values(filteredEntrySnaps).forEach(({ snaps }) => snaps.forEach(s => allDatesSet.add(s.snapshot_date)));
+  const sortedDays = [...allDatesSet].sort();
+
+  // For each date: for each entry, find latest snapshot <= date, sum reach
+  const timelineData = sortedDays.map(date => {
+    let totalReach = 0;
+    Object.entries(filteredEntrySnaps).forEach(([entryId, { snaps, platform }]) => {
+      let latest = null;
+      for (let i = snaps.length - 1; i >= 0; i--) {
+        if (snaps[i].snapshot_date <= date) { latest = snaps[i]; break; }
+      }
+      if (latest) {
+        const reachIds = CONFIG.getReachMetricIds(platform);
+        totalReach += reachIds.reduce((s, id) => s + (latest.metrics[id] || 0), 0);
+      }
+    });
+    return totalReach;
+  });
+
   const dayLabels = sortedDays.map(d => d.slice(8) + '/' + parseInt(d.slice(5, 7)));
 
   if (chartTimeline) chartTimeline.destroy();
   chartTimeline = new Chart(document.getElementById('chartTimeline'), {
     type: 'line',
-    data: { labels: dayLabels, datasets: [{ label: 'חשיפות מצטברות', data: cumData, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,.08)', fill: true, tension: .3, pointRadius: 4, pointBackgroundColor: '#378ADD' }] },
+    data: { labels: dayLabels, datasets: [{ label: 'חשיפות מצטברות', data: timelineData, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,.08)', fill: true, tension: .3, pointRadius: 4, pointBackgroundColor: '#378ADD' }] },
     options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => { if (v !== Math.floor(v)) return ''; return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v; } } }, x: { ticks: { font: { size: 11 } } } } }
   });
 
