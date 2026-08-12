@@ -160,7 +160,7 @@ table.data-table tr:hover{background:var(--blue-50)}
 .edit-btn{display:none;width:28px;height:28px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;cursor:pointer;align-items:center;justify-content:center;font-size:13px;transition:all .15s;position:absolute;top:10px;left:10px;z-index:5}
 .edit-btn:hover{background:var(--blue-50);border-color:var(--blue-400)}
 body.admin-mode .edit-btn{display:flex}
-body.admin-mode .goals-section{display:block!important}
+/* goals-section visibility controlled by renderGoals() based on DB data */
 body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.admin-mode .chart-card:hover,body.admin-mode .link-item:hover{outline:2px solid var(--blue-200);outline-offset:2px;border-radius:var(--radius)}
 
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
@@ -213,6 +213,11 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <h1>קווים אדומים</h1>
     <select id="topicSelect" onchange="changeTopic()" aria-label="בחירת קמפיין" style="padding:4px 12px;border-radius:16px;border:1.5px solid var(--teal-200);font-size:12px;font-weight:600;color:var(--teal-800);background:var(--teal-50);font-family:inherit;cursor:pointer">
     </select>
+    <div id="campaignFilterChips" style="display:none;gap:4px;align-items:center;flex-wrap:wrap">
+      <button class="filter-chip active" data-cf="active" onclick="setCampaignFilter('active',this)" style="font-size:11px;padding:2px 8px">🟢 פעילים</button>
+      <button class="filter-chip" data-cf="all" onclick="setCampaignFilter('all',this)" style="font-size:11px;padding:2px 8px">הכל</button>
+      <button class="filter-chip" data-cf="recent" onclick="setCampaignFilter('recent',this)" style="font-size:11px;padding:2px 8px">3 אחרונים</button>
+    </div>
   </div>
   <div class="topbar-left">
     <div class="user-chip" id="userChip" style="display:none">
@@ -226,19 +231,13 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 
 <div class="main">
 
-  <div id="campaignFilterChips" style="display:none;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-    <span style="font-size:12px;color:var(--gray-500);font-weight:500">סינון קמפיינים:</span>
-    <button class="filter-chip active" data-cf="active" onclick="setCampaignFilter('active',this)">🟢 פעילים</button>
-    <button class="filter-chip" data-cf="all" onclick="setCampaignFilter('all',this)">הכל</button>
-    <button class="filter-chip" data-cf="recent" onclick="setCampaignFilter('recent',this)">3 אחרונים</button>
-  </div>
-
   <div class="admin-panel" id="adminPanel">
     <div class="section-title">ניהול</div>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <a href="admin-campaign.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--blue-400)">➕ קמפיין חדש</a>
       <a href="admin-pool.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--teal-400)">👥 ניהול מאגר</a>
       <button class="admin-btn" style="background:var(--gray-600)" onclick="exportCSV()">📥 ייצוא CSV</button>
+      <button class="admin-btn" style="background:var(--green-600,#16a34a)" onclick="copyFormLink()">📋 העתק קישור להזנת תוכן</button>
     </div>
     <div class="admin-grid">
       <div class="admin-card">
@@ -456,6 +455,9 @@ async function loadDashboardData() {
     if (campData.status === 'ended') updateCampStatus('ended');
     else if (campData.status === 'paused') updateCampStatus('paused');
     else updateCampStatus('active');
+
+    // Show end_date warning to admin if date has passed but campaign is still active
+    showEndDateWarning(campData);
   }
 
   // Load goals
@@ -606,8 +608,13 @@ function renderGoals() {
     target: g.target_value
   }));
 
-  // Fallback if no DB goals
-  if (goals.length === 0) return;
+  const goalsSection = document.querySelector('.goals-section');
+  // Hide goals section if no goals defined for this campaign
+  if (goals.length === 0) {
+    if (goalsSection) goalsSection.style.display = 'none';
+    return;
+  }
+  if (goalsSection) goalsSection.style.display = 'block';
 
   const container = document.getElementById('goalsContainer');
   container.innerHTML = '';
@@ -821,19 +828,18 @@ function renderBreakdown() {
   grid.innerHTML = '';
 
   // "הכל" card
-  const totalReach = allData.reduce((s, e) => s + e.reach, 0);
   const allDiv = document.createElement('div');
   allDiv.className = 'breakdown-card' + (selectedPlatforms.size === 0 ? ' active-bk' : '');
-  allDiv.innerHTML = `<div class="bk-icon">📊</div><div class="bk-name">הכל</div><div class="bk-val">${totalReach >= 1000 ? (totalReach / 1000).toFixed(1) + 'K' : totalReach}</div><div class="bk-sub">${allData.length} תכנים</div>`;
+  allDiv.innerHTML = `<div class="bk-icon">📊</div><div class="bk-name">הכל</div><div class="bk-val">${allData.length}</div><div class="bk-sub">תכנים</div>`;
   allDiv.onclick = () => { selectedPlatforms.clear(); syncPlatformChips(); renderAll(); };
   grid.appendChild(allDiv);
 
   PLATFORMS.forEach(p => {
     const pd = allData.filter(e => e.platform === p.id);
-    const reach = pd.reduce((s, e) => s + e.reach, 0);
+    if (pd.length === 0) return; // hide empty platforms
     const div = document.createElement('div');
     div.className = 'breakdown-card' + (selectedPlatforms.has(p.id) ? ' active-bk' : '');
-    div.innerHTML = `<div class="bk-icon">${p.icon}</div><div class="bk-name">${p.name}</div><div class="bk-val">${reach >= 1000 ? (reach / 1000).toFixed(1) + 'K' : reach}</div><div class="bk-sub">${pd.length} תכנים</div>`;
+    div.innerHTML = `<div class="bk-icon">${p.icon}</div><div class="bk-name">${p.name}</div><div class="bk-val">${pd.length}</div><div class="bk-sub">תכנים</div>`;
     div.onclick = () => { if (selectedPlatforms.has(p.id)) selectedPlatforms.delete(p.id); else selectedPlatforms.add(p.id); syncPlatformChips(); renderAll(); };
     grid.appendChild(div);
   });
@@ -848,19 +854,18 @@ function renderOrgBreakdown() {
   grid.innerHTML = '';
 
   // "הכל" card
-  const totalReach = allData.reduce((s, e) => s + e.reach, 0);
   const allDiv = document.createElement('div');
   allDiv.className = 'breakdown-card' + (selectedOrgs.size === 0 ? ' active-bk' : '');
-  allDiv.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">הכל</div><div class="bk-val">${totalReach >= 1000 ? (totalReach / 1000).toFixed(1) + 'K' : totalReach}</div><div class="bk-sub">${allData.length} תכנים</div>`;
+  allDiv.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">הכל</div><div class="bk-val">${allData.length}</div><div class="bk-sub">תכנים</div>`;
   allDiv.onclick = () => { selectedOrgs.clear(); syncOrgChips(); renderAll(); };
   grid.appendChild(allDiv);
 
   ORGS.forEach(o => {
     const od = allData.filter(e => e.person.org === o);
-    const reach = od.reduce((s, e) => s + e.reach, 0);
+    if (od.length === 0) return; // hide empty orgs
     const div = document.createElement('div');
     div.className = 'breakdown-card' + (selectedOrgs.has(o) ? ' active-bk' : '');
-    div.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">${o}</div><div class="bk-val">${reach >= 1000 ? (reach / 1000).toFixed(1) + 'K' : reach}</div><div class="bk-sub">${od.length} תכנים</div>`;
+    div.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">${o}</div><div class="bk-val">${od.length}</div><div class="bk-sub">תכנים</div>`;
     div.onclick = () => { if (selectedOrgs.has(o)) selectedOrgs.delete(o); else selectedOrgs.add(o); syncOrgChips(); renderAll(); };
     grid.appendChild(div);
   });
@@ -886,6 +891,12 @@ function copyLink(link) {
   navigator.clipboard.writeText(link).then(() => showToast('הקישור הועתק!')).catch(() => {
     const ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('הקישור הועתק!');
   });
+}
+
+function copyFormLink() {
+  const base = window.location.href.replace(/dashboard\.html.*/, 'form.html');
+  const link = base + '?campaign=' + activeCampaignId;
+  copyLink(link);
 }
 
 function renderLinkArchive() {
@@ -1031,7 +1042,35 @@ function updateCampStatus(forceStatus) {
   } else {
     banner.style.display = 'none';
   }
-  showToast('סטטוס עודכן: ' + label.textContent);
+  // Only toast on manual admin status change, not on campaign switch
+  if (!forceStatus) showToast('סטטוס עודכן: ' + label.textContent);
+}
+
+function showEndDateWarning(campData) {
+  let warn = document.getElementById('endDateWarning');
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'endDateWarning';
+    warn.style.cssText = 'padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:12px;display:none';
+    const panel = document.getElementById('adminPanel');
+    if (panel) panel.appendChild(warn);
+  }
+  const isAdmin = document.getElementById('adminCheck').checked;
+  if (!isAdmin || !campData.end_date || campData.status !== 'active') {
+    warn.style.display = 'none';
+    return;
+  }
+  const endDate = new Date(campData.end_date + 'T23:59:59');
+  if (new Date() > endDate) {
+    const formatted = campData.end_date.split('-').reverse().join('.');
+    warn.innerHTML = `⚠️ תאריך הסיום של הקמפיין (${formatted}) כבר עבר. הקמפיין עדיין פעיל — <strong>ניתן לסגור אותו ידנית</strong> דרך שדה הסטטוס למעלה.`;
+    warn.style.background = '#fff8e1';
+    warn.style.color = '#92400e';
+    warn.style.border = '1px solid #f59e0b';
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
 }
 
 function exportCSV() {

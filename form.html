@@ -188,7 +188,7 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
         </select>
       </div>
       <button class="btn btn-primary btn-full" id="btnLogin" disabled onclick="doLogin()">כניסה</button>
-      <a href="dashboard.html" class="skip-link">צפייה בדשבורד ←</a>
+      <a class="skip-link" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד ←</a>
     </div>
   </div>
 
@@ -204,10 +204,10 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
     </div>
     <div class="area-header">
       <div class="area-title">התכנים שלי</div>
-      <button class="add-btn" onclick="showUploadScreen()">+ הוסף תוכן</button>
+      <button class="add-btn" id="btnAddContent" onclick="showUploadScreen()">+ הוסף תוכן</button>
     </div>
     <div id="contentList"></div>
-    <a href="dashboard.html" class="skip-link" style="margin-top:24px">צפייה בדשבורד ←</a>
+    <a class="skip-link" style="margin-top:24px;cursor:pointer" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד ←</a>
   </div>
 
   <!-- Screen 3: Upload new content -->
@@ -290,7 +290,7 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
       <h2 id="successTitle">הנתונים נשמרו בהצלחה!</h2>
       <p id="successMsg">התכנים שלך עודכנו.</p>
       <button class="btn btn-primary btn-full" onclick="showScreen('screenPersonal')">מעבר לאזור האישי</button>
-      <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="window.open('dashboard.html','_blank')">צפייה בדשבורד</button>
+      <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד</button>
     </div>
   </div>
 
@@ -354,10 +354,8 @@ async function init() {
     CAMPAIGN = campData;
   }
 
-  // Check if campaign expired by end_date (even if status is still 'active')
-  if (CAMPAIGN.end_date && new Date() > new Date(CAMPAIGN.end_date + 'T23:59:59') && CAMPAIGN.status === 'active') {
-    CAMPAIGN.status = 'ended';
-  }
+  // Note: campaign only ends when admin manually sets status to 'ended'
+  // end_date is informational — admin gets a warning in the dashboard
 
   const badge = document.getElementById('campaignName');
   badge.textContent = CAMPAIGN.name;
@@ -539,14 +537,18 @@ async function renderPersonalArea() {
     statusBanner.style.cssText = 'text-align:center;padding:10px;font-size:14px;font-weight:600;border-radius:var(--radius-sm);margin-bottom:12px;display:none';
     list.parentNode.insertBefore(statusBanner, list);
   }
+  const addBtn = document.getElementById('btnAddContent');
   if (CAMPAIGN.status === 'paused') {
     statusBanner.textContent = 'הקמפיין מושהה — לא ניתן להעלות תוכן חדש כרגע';
     statusBanner.style.background = '#fff8e1'; statusBanner.style.color = '#92400e'; statusBanner.style.display = 'block';
+    if (addBtn) { addBtn.disabled = true; addBtn.style.opacity = '0.5'; addBtn.style.cursor = 'not-allowed'; }
   } else if (CAMPAIGN.status === 'ended') {
     statusBanner.textContent = 'הקמפיין הסתיים — לא ניתן להעלות תוכן חדש';
     statusBanner.style.background = '#f5f5f5'; statusBanner.style.color = '#888'; statusBanner.style.display = 'block';
+    if (addBtn) { addBtn.disabled = true; addBtn.style.opacity = '0.5'; addBtn.style.cursor = 'not-allowed'; }
   } else {
     statusBanner.style.display = 'none';
+    if (addBtn) { addBtn.disabled = false; addBtn.style.opacity = '1'; addBtn.style.cursor = 'pointer'; }
   }
 
   list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400)">טוען...</div>';
@@ -560,11 +562,12 @@ async function renderPersonalArea() {
   if (error) { list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-400)">שגיאה בטעינה</div>'; return; }
 
   if (!contents || contents.length === 0) {
+    const canAdd = CAMPAIGN.status === 'active';
     list.innerHTML = `<div class="empty-state">
       <span class="empty-icon">📋</span>
       <h3>עדיין לא העלית תכנים</h3>
-      <p>לחץ על "הוסף תוכן" כדי להתחיל</p>
-      <button class="btn btn-primary" onclick="showUploadScreen()">+ הוסף תוכן ראשון</button>
+      <p>${canAdd ? 'לחץ על "הוסף תוכן" כדי להתחיל' : ''}</p>
+      ${canAdd ? '<button class="btn btn-primary" onclick="showUploadScreen()">+ הוסף תוכן ראשון</button>' : ''}
     </div>`;
     return;
   }
@@ -612,14 +615,7 @@ function formatDate(d) {
 
 // =================== UPLOAD ===================
 function showUploadScreen() {
-  if (CAMPAIGN.status === 'ended') {
-    alert('הקמפיין הסתיים — לא ניתן להעלות תוכן חדש.');
-    return;
-  }
-  if (CAMPAIGN.status === 'paused') {
-    alert('הקמפיין מושהה — לא ניתן להעלות תוכן חדש כרגע.');
-    return;
-  }
+  if (CAMPAIGN.status === 'ended' || CAMPAIGN.status === 'paused') return;
   uploadSelectedPlatforms = [];
   uploadPlatformData = {};
   currentPlatformIdx = 0;
