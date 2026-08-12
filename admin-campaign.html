@@ -602,7 +602,7 @@ function renderPrimaryGoals() {
     <div class="goal-item">
       <span class="goal-icon">${g.icon}</span>
       <span class="goal-name">${g.label}</span>
-      <input type="number" value="${g.value || ''}" placeholder="יעד" onchange="primaryGoals[${i}].value=Number(this.value)">
+      <input type="number" value="${g.value || ''}" placeholder="יעד" oninput="primaryGoals[${i}].value=Number(this.value)">
       <button class="remove-btn" onclick="removePrimaryGoal(${i})" title="הסרה">×</button>
     </div>
   `).join('');
@@ -622,7 +622,7 @@ function renderSecondaryGoals() {
       ${group.goals.map(g => `
         <div class="goal-item">
           <span class="goal-name">${g.metricLabel}</span>
-          <input type="number" value="${g.value || ''}" placeholder="יעד" onchange="secondaryGoals[${g.idx}].value=Number(this.value)">
+          <input type="number" value="${g.value || ''}" placeholder="יעד" oninput="secondaryGoals[${g.idx}].value=Number(this.value)">
           <button class="remove-btn" onclick="removeSecondaryGoal(${g.idx})" title="הסרה">×</button>
         </div>
       `).join('')}
@@ -800,9 +800,13 @@ async function launchCampaign() {
     }
 
     // 4. Add goals (primary + secondary)
+    // Sync primary goal values from DOM (safety net)
+    document.querySelectorAll('#primaryGoalsContainer input[type="number"]').forEach((inp, i) => {
+      if (primaryGoals[i] && inp.value) primaryGoals[i].value = Number(inp.value);
+    });
     const goalRows = [];
     let sortIdx = 0;
-    primaryGoals.filter(g => g.value).forEach(g => {
+    primaryGoals.filter(g => g.value > 0).forEach(g => {
       goalRows.push({
         campaign_id: campaignId,
         name: g.label,
@@ -813,7 +817,7 @@ async function launchCampaign() {
         sort_order: ++sortIdx
       });
     });
-    secondaryGoals.filter(g => g.value).forEach(g => {
+    secondaryGoals.filter(g => g.value > 0).forEach(g => {
       goalRows.push({
         campaign_id: campaignId,
         name: g.platformName + ' — ' + g.metricLabel,
