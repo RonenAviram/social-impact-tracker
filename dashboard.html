@@ -1430,10 +1430,16 @@ async function openParticipantsPanel() {
   if (!activeCampaignId) { showToast('אין קמפיין פעיל'); return; }
   const db = CONFIG.db();
 
+  // Show campaign name in header
+  const camp = allCampaigns.find(c => c.id === activeCampaignId);
+  document.getElementById('participantsTitle').textContent = '👥 משתתפים — ' + (camp ? camp.name : 'קמפיין');
+
   // Get all pool profiles
-  const { data: allProfiles } = await db.rpc('get_all_profiles');
+  const { data: allProfiles, error: profErr } = await db.rpc('get_all_profiles');
   // Get current campaign participants
-  const { data: campParts } = await db.from('campaign_participants').select('profile_id').eq('campaign_id', activeCampaignId);
+  const { data: campParts, error: cpErr } = await db.from('campaign_participants').select('profile_id').eq('campaign_id', activeCampaignId);
+
+  console.log('Participants panel:', { activeCampaignId, campParts: campParts?.length, allProfiles: allProfiles?.length, profErr, cpErr });
 
   const inCampaign = new Set((campParts || []).map(cp => cp.profile_id));
   const profiles = (allProfiles || []).filter(p => p.is_active);
@@ -1529,7 +1535,7 @@ loadCampaignDropdown().then(() => loadDashboardData());
 <div class="participants-overlay" id="participantsOverlay" onclick="if(event.target===this)closeParticipantsPanel()">
   <div class="participants-modal">
     <div class="participants-header">
-      <h3>👥 משתתפים בקמפיין</h3>
+      <h3 id="participantsTitle">👥 משתתפים בקמפיין</h3>
       <button class="participants-close" onclick="closeParticipantsPanel()">✕</button>
     </div>
     <div class="participants-actions">
