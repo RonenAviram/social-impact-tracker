@@ -24,8 +24,9 @@
 - **Seed Campaign ID:** 87ffac94-18ab-43e3-bedb-f7cc877973f8
 - **Admin password:** REDLINES2026 (SHA-256 hash, synced across all campaigns)
 - **Tables:** organizations, profiles, campaigns, campaign_participants, campaign_goals, content_entries, metrics_snapshots
-- **RPC Functions:** login_user, get_campaign_pool, get_all_profiles, verify_admin, add_content_entry, update_metrics (UPSERT), delete_content_entry, get_user_contents, get_dashboard_data, get_campaign
-- **RLS:** SELECT/INSERT/UPDATE/DELETE על כל הטבלאות (כולל campaigns_delete שנוסף 2026-08-12)
+- **RPC Functions:** login_user, get_campaign_pool, get_all_profiles, verify_admin (3-tier fallback), add_content_entry, update_metrics (UPSERT), delete_content_entry, get_user_contents, get_dashboard_data, get_campaign, get_campaign_snapshots
+- **RLS:** SELECT/INSERT/UPDATE/DELETE על כל הטבלאות (כולל campaigns_delete, snapshots_delete)
+- **DEFAULT_ADMIN_HASH:** SHA-256 של REDLINES2026 — fallback ב-config.js + verify_admin RPC כשאין קמפיינים
 
 ## Multi-Campaign Support
 - URL parameter `?campaign=<UUID>` על form.html ו-dashboard.html
@@ -43,8 +44,12 @@
 - **ארכיון קישורים:** עצמאי מפילטרי הגרפים
 - **גרפים:** ציר Y מציג רק מספרים שלמים
 - **עיתון מודפס:** מוחרג מכל הגרפים/מדדים אלא אם הוא הפלטפורמה היחידה שנבחרה בפילטר
-- **יעדים:** דו-שכבתיים — ראשיים (כלליים: חשיפות, אינטראקציות, תכנים, משתתפים, פלטפורמות) + משניים (לפי פלטפורמה+מדד). ממשק מובנה (dropdowns), לא טקסט חופשי. חישוב בדשבורד לפי goal_type/platform_id/metric_id. מוצגים רק אם הוגדרו.
+- **יעדים:** דו-שכבתיים — ראשיים (כלליים: חשיפות, אינטראקציות, תכנים, יוצרי תוכן, פלטפורמות) + משניים (לפי פלטפורמה+מדד). ממשק מובנה (dropdowns), לא טקסט חופשי. חישוב בדשבורד לפי goal_type/platform_id/metric_id. מוצגים רק אם הוגדרו.
 - **כפתור העתקת קישור טופס:** באזור ניהול, מעתיק URL עם campaign parameter
+- **פילטר ארגונים:** דינמי — נבנה ממשתתפי הקמפיין (get_campaign_pool) + ארגונים מתכנים שהועלו
+- **ניהול משתתפים מדשבורד:** כפתור סגול "משתתפים בקמפיין" במצב מנהל — מציג כל הפרופילים, מסמן בירוק מי בקמפיין, בחר/נקה הכל
+- **activeCampaignId:** נבדק מול allCampaigns — אם לא קיים, נופל לקמפיין הראשון ברשימה
+- **כרטיסיית דשבורד:** "יוצרי תוכן פעילים" (לא "משתתפים")
 
 ## Hosting
 - **Repo:** https://github.com/RonenAviram/social-impact-tracker
@@ -63,22 +68,27 @@
 - `supabase_uat_fixes.sql` — UPSERT למדדים + unique constraint + ניקוי כפילויות
 - `campaigns_delete` policy — הורץ ידנית (לא בקובץ)
 - `supabase_goals_migration.sql` — הרחבת campaign_goals עם goal_type, platform_id, metric_id
+- `supabase_verify_admin_fix.sql` — verify_admin 3-tier fallback + snapshots_delete policy
 
-## סטטוס (2026-08-12)
-- ✅ 24 באגים/שיפורים תוקנו (QA + UAT 4 סבבים + 5 נוספים)
+## סטטוס (2026-08-13)
+- ✅ 24+ באגים/שיפורים תוקנו (QA + UAT 4 סבבים + 5 נוספים + סשן 13/8)
 - ✅ 14/14 בדיקות אוטומטיות עוברות
 - ✅ Multi-campaign support
-- ✅ סיסמת מנהל מסונכרנת
+- ✅ סיסמת מנהל מסונכרנת + 3-tier fallback (campaign → any campaign → default hash)
 - ✅ מחיקת קמפיינים
 - ✅ עיתון מודפס מוחרג מגרפים כלליים
 - ✅ Timeline chart מבוסס snapshots עם carry-forward
 - ✅ form.html try/catch למניעת תקיעה במובייל
-- ✅ 3 קומיטים נדחפו בהצלחה ל-GitHub
 - ✅ ממשק יעדים מובנה (ראשיים + משניים לפי פלטפורמה)
 - ✅ עריכת יעדים ממצב מנהל בדשבורד (inline, בלי prompt)
 - ✅ ולידציה: יעד בלי מספר חוסם המשך + highlight אדום
 - ✅ כל ה-SQL migrations הורצו בהצלחה
-- 🔄 הכנת סביבת UAT למיכל פרינס
+- ✅ ניהול משתתפים מדשבורד (כפתור סגול, בחר/נקה הכל, צבעים)
+- ✅ פילטר ארגונים דינמי מהקמפיין
+- ✅ כרטיסייה "יוצרי תוכן פעילים" + מקרא חשיפות בגרף
+- ✅ activeCampaignId fallback לקמפיין ראשון כשה-seed לא קיים
+- ✅ cleanup.html — כלי ניקוי נתונים לפני UAT
+- 🔄 מארז הדרכה למיכל פרינס (דרוש שכתוב — ללא צילומי מסך, טקסט בלבד)
 - ⏳ UAT עם מיכל פרינס
 - ⏳ Handoff: fork + Supabase migration לארגון
 
