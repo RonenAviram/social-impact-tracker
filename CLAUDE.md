@@ -14,8 +14,8 @@
 |---|---|
 | `config.js` | הגדרות (11 פלטפורמות, 8 ארגונים, Supabase client, session helpers) |
 | `form.html` | אשף הזנת תוכן רב-שלבי עם campaign routing |
-| `dashboard.html` | דשבורד אינטראקטיבי + מעבר בין קמפיינים + פאנל מנהל |
-| `admin-campaign.html` | אשף יצירת קמפיין עם ירושת סיסמת מנהל |
+| `dashboard.html` | דשבורד אינטראקטיבי + מעבר בין קמפיינים + פאנל מנהל + עריכת יעדים |
+| `admin-campaign.html` | אשף יצירת קמפיין עם ירושת סיסמת מנהל + ממשק יעדים מובנה |
 | `admin-pool.html` | ניהול מאגר משתתפים + ייבוא/ייצוא CSV |
 | `spec.html` | שאלון פגישת אפיון |
 
@@ -56,13 +56,13 @@
 - לא לבקש אישור לפני קומיט
 - פוש דרך CLI (sandbox חוסם git push — המשתמש מריץ ידנית)
 
-## SQL Migrations (כולם הורצו אלא אם צוין אחרת)
+## SQL Migrations (כולם הורצו)
 - `supabase_migration.sql` — סכמה מלאה + seed data
 - `supabase_bugfix_migration.sql` — DELETE RLS policy על organizations
-- `supabase_fix_password_hash.sql` — סנכרון hash סיסמה (0 rows affected)
+- `supabase_fix_password_hash.sql` — סנכרון hash סיסמה
 - `supabase_uat_fixes.sql` — UPSERT למדדים + unique constraint + ניקוי כפילויות
 - `campaigns_delete` policy — הורץ ידנית (לא בקובץ)
-- `supabase_goals_migration.sql` — ⏳ **ממתין להרצה** — הרחבת campaign_goals עם goal_type, platform_id, metric_id
+- `supabase_goals_migration.sql` — הרחבת campaign_goals עם goal_type, platform_id, metric_id
 
 ## סטטוס (2026-08-12)
 - ✅ 24 באגים/שיפורים תוקנו (QA + UAT 4 סבבים + 5 נוספים)
@@ -75,7 +75,9 @@
 - ✅ form.html try/catch למניעת תקיעה במובייל
 - ✅ 3 קומיטים נדחפו בהצלחה ל-GitHub
 - ✅ ממשק יעדים מובנה (ראשיים + משניים לפי פלטפורמה)
-- ⚠️ supabase_goals_migration.sql + supabase_fix_password_hash.sql ממתינים להרצה
+- ✅ עריכת יעדים ממצב מנהל בדשבורד (inline, בלי prompt)
+- ✅ ולידציה: יעד בלי מספר חוסם המשך + highlight אדום
+- ✅ כל ה-SQL migrations הורצו בהצלחה
 - 🔄 הכנת סביבת UAT למיכל פרינס
 - ⏳ UAT עם מיכל פרינס
 - ⏳ Handoff: fork + Supabase migration לארגון

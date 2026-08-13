@@ -538,7 +538,16 @@ async function loadDashboardData() {
     .order('sort_order');
   if (goalsData) window._campaignGoals = goalsData;
 
-  // Org filter chips stay as built by buildFilterChips() from CONFIG.ORGS
+  // Build org filter dynamically from campaign participants
+  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
+  const poolOrgs = [...new Set((poolData || []).map(p => p.org_name))].sort();
+  // Also include orgs from entries (in case someone uploaded but was removed from pool)
+  const entryOrgs = [...new Set(entries.map(e => e.person.org))];
+  const allOrgs = [...new Set([...poolOrgs, ...entryOrgs])].sort();
+  const orgContainer = document.getElementById('orgFilters');
+  orgContainer.innerHTML = '<div class="filter-label">ארגון:</div>' +
+    '<button class="org-chip active" data-org="all" aria-pressed="true" onclick="toggleOrgFilter(this)">הכל</button>' +
+    allOrgs.map(o => `<button class="org-chip${selectedOrgs.has(o) ? ' active' : ''}" data-org="${o}" aria-pressed="${selectedOrgs.has(o)}" onclick="toggleOrgFilter(this)">${o}</button>`).join('');
 
   renderAll();
   hideLoading();
