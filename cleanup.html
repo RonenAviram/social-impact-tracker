@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כלי ניקוי — Social Impact Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Heebo', sans-serif; background: #f0faf4; color: #1a2e23; padding: 32px; }
+  .container { max-width: 700px; margin: 0 auto; }
+  h1 { color: #1a5c3a; font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #4a6b56; margin-bottom: 24px; }
+  .card { background: white; border: 1px solid #c8ddd0; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(26,92,58,0.08); }
+  .card h2 { font-size: 18px; color: #1a5c3a; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: right; padding: 8px; background: #e8f5ee; color: #1a5c3a; font-weight: 600; }
+  td { padding: 8px; border-bottom: 1px solid #e8f5ee; }
+  .count { font-size: 28px; font-weight: 700; color: #1a5c3a; }
+  .btn { display: inline-block; padding: 10px 24px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-left: 8px; margin-bottom: 8px; }
+  .btn-danger { background: #dc3545; color: white; }
+  .btn-danger:hover { background: #c82333; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 14px; display: none; white-space: pre-line; }
+  .status.success { display: block; background: #d4edda; color: #155724; }
+  .status.error { display: block; background: #f8d7da; color: #721c24; }
+  .status.info { display: block; background: #e8f5ee; color: #1a5c3a; }
+  .loading { text-align: center; padding: 40px; color: #7a9b88; }
+  .section-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .section-row .mini-card { flex: 1; background: #e8f5ee; border-radius: 8px; padding: 16px; text-align: center; }
+  .mini-label { font-size: 12px; color: #4a6b56; }
+  .warn { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #856404; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🧹 כלי ניקוי — לפני UAT</h1>
+  <p class="subtitle">סקירת נתונים קיימים וניקוי לפני בדיקות עם מיכל</p>
+
+  <div class="warn">⚠️ כלי זה מיועד לשימוש פנימי בלבד — מוחק נתוני בדיקה מ-Supabase. לא לשלוח למיכל.</div>
+
+  <div id="loading" class="loading">טוען נתונים מ-Supabase...</div>
+
+  <div id="content" style="display:none;">
+    <div class="card">
+      <h2>סיכום נתונים</h2>
+      <div class="section-row">
+        <div class="mini-card"><div class="count" id="campaignCount">0</div><div class="mini-label">קמפיינים</div></div>
+        <div class="mini-card"><div class="count" id="contentCount">0</div><div class="mini-label">תכנים</div></div>
+        <div class="mini-card"><div class="count" id="metricsCount">0</div><div class="mini-label">מדדים</div></div>
+        <div class="mini-card"><div class="count" id="profileCount">0</div><div class="mini-label">פרופילים</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>קמפיינים קיימים</h2>
+      <table id="campaignsTable">
+        <thead><tr><th>שם</th><th>סטטוס</th><th>תאריך</th><th>תכנים</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="noCampaigns" style="display:none; padding:12px; color:#7a9b88; text-align:center;">אין קמפיינים</div>
+    </div>
+
+    <div class="card">
+      <h2>פעולות ניקוי</h2>
+      <p style="margin-bottom:16px; font-size:14px; color:#4a6b56;">
+        מוחק תכנים, מדדים, יעדים, ומשתתפי קמפיין. <strong>פרופילים, ארגונים, והקמפיין הראשי נשארים.</strong>
+      </p>
+      <button class="btn btn-danger" id="btnClean" onclick="cleanAll()">🗑️ נקה הכל ומחק קמפיינים מיותרים</button>
+      <div id="statusBox" class="status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const db = CONFIG.db();
+const SEED = CONFIG.CAMPAIGN_ID;
+let allCampaigns = [];
+
+async function loadData() {
+  try {
+    const { data: campaigns, error: cErr } = await db.from('campaigns').select('*').order('created_at', { ascending: false });
+    if (cErr) throw cErr;
+    allCampaigns = campaigns || [];
+
+    const { count: contentCount } = await db.from('content_entries').select('*', { count: 'exact', head: true });
+    const { count: metricsCount } = await db.from('metrics_snapshots').select('*', { count: 'exact', head: true });
+    const { count: profileCount } = await db.from('profiles').select('*', { count: 'exact', head: true });
+    const { data: contentByCampaign } = await db.from('content_entries').select('campaign_id');
+
+    const cc = {};
+    (contentByCampaign || []).forEach(e => { cc[e.campaign_id] = (cc[e.campaign_id] || 0) + 1; });
+
+    document.getElementById('campaignCount').textContent = allCampaigns.length;
+    document.getElementById('contentCount').textContent = contentCount || 0;
+    document.getElementById('metricsCount').textContent = metricsCount || 0;
+    document.getElementById('profileCount').textContent = profileCount || 0;
+
+    const tbody = document.querySelector('#campaignsTable tbody');
+    tbody.innerHTML = '';
+    if (allCampaigns.length === 0) {
+      document.getElementById('noCampaigns').style.display = 'block';
+    } else {
+      document.getElementById('noCampaigns').style.display = 'none';
+      allCampaigns.forEach(c => {
+        const tr = document.createElement('tr');
+        const date = new Date(c.created_at).toLocaleDateString('he-IL');
+        const tag = c.id === SEED ? ' ⭐' : '';
+        tr.innerHTML = `<td>${c.name}${tag}</td><td>${c.status || 'active'}</td><td>${date}</td><td>${cc[c.id] || 0}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loading').innerHTML = `<div class="status error" style="display:block;">שגיאה: ${err.message}</div>`;
+  }
+}
+
+function showStatus(msg, type) {
+  const box = document.getElementById('statusBox');
+  box.className = 'status ' + type;
+  box.textContent = msg;
+}
+
+async function cleanAll() {
+  if (!confirm('למחוק את כל נתוני הבדיקה? (פרופילים וארגונים נשארים)')) return;
+
+  document.getElementById('btnClean').disabled = true;
+  const log = [];
+
+  try {
+    // 1. Get all content entry IDs for metrics deletion
+    const { data: entries } = await db.from('content_entries').select('id');
+    const entryIds = (entries || []).map(e => e.id);
+
+    // 2. Delete metrics_snapshots (by content_entry_id to work with any RLS)
+    if (entryIds.length > 0) {
+      // Delete in batches of 50
+      for (let i = 0; i < entryIds.length; i += 50) {
+        const batch = entryIds.slice(i, i + 50);
+        const { error } = await db.from('metrics_snapshots').delete().in('content_entry_id', batch);
+        if (error) throw new Error('מדדים: ' + error.message);
+      }
+    }
+    // Also try catch-all delete for orphans
+    await db.from('metrics_snapshots').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    log.push('✓ מדדים נמחקו');
+
+    // 3. Delete content_entries
+    const { error: e2 } = await db.from('content_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (e2) throw new Error('תכנים: ' + e2.message);
+    log.push('✓ תכנים נמחקו');
+
+    // 4. Delete campaign_goals
+    const { error: e3 } = await db.from('campaign_goals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (e3) throw new Error('יעדים: ' + e3.message);
+    log.push('✓ יעדים נמחקו');
+
+    // 5. Delete campaign_participants
+    const { error: e4 } = await db.from('campaign_participants').delete().neq('campaign_id', '00000000-0000-0000-0000-000000000000');
+    if (e4) throw new Error('משתתפים: ' + e4.message);
+    log.push('✓ שיוכי משתתפים נמחקו');
+
+    // 6. Delete extra campaigns (keep seed)
+    const extras = allCampaigns.filter(c => c.id !== SEED);
+    for (const c of extras) {
+      const { error } = await db.from('campaigns').delete().eq('id', c.id);
+      if (error) log.push(`⚠️ לא הצלחתי למחוק "${c.name}": ${error.message}`);
+      else log.push(`✓ קמפיין "${c.name}" נמחק`);
+    }
+    if (extras.length === 0) log.push('✓ אין קמפיינים מיותרים');
+
+    showStatus('✅ ניקוי הושלם!\n\n' + log.join('\n') + '\n\n💡 מיכל יכולה עכשיו ליצור קמפיין חדש.', 'success');
+    setTimeout(() => loadData(), 1500);
+  } catch (err) {
+    showStatus('❌ שגיאה: ' + err.message + '\n\n' + log.join('\n'), 'error');
+  }
+  document.getElementById('btnClean').disabled = false;
+}
+
+loadData();
+</script>
+</body>
+</html>
