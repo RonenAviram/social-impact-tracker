@@ -151,9 +151,15 @@ body.admin-mode .goals-edit-bar{display:flex}
 .participants-body{overflow-y:auto;padding:16px 20px;flex:1}
 .participants-org-group{margin-bottom:16px}
 .participants-org-name{font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--gray-100)}
-.participant-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+.participant-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;transition:background .15s}
+.participant-row.in-campaign{background:var(--teal-50)}
+.participant-row:not(.in-campaign){background:transparent}
 .participant-row label{flex:1;font-size:13px;color:var(--gray-700);cursor:pointer}
-.participant-row input[type=checkbox]{accent-color:var(--blue-400);cursor:pointer;width:16px;height:16px}
+.participant-row.in-campaign label{color:var(--teal-600);font-weight:500}
+.participant-row input[type=checkbox]{accent-color:var(--teal-400);cursor:pointer;width:16px;height:16px}
+.participants-actions{display:flex;gap:8px;padding:0 20px 12px;border-bottom:1px solid var(--gray-100)}
+.participants-actions button{padding:5px 12px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray-600)}
+.participants-actions button:hover{background:var(--gray-50);border-color:var(--gray-300)}
 .participants-footer{padding:12px 20px;border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center}
 .participants-count{font-size:12px;color:var(--gray-500)}
 .participants-save{padding:8px 20px;background:var(--blue-400);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -1449,9 +1455,10 @@ async function openParticipantsPanel() {
     group.innerHTML = `<div class="participants-org-name">${org}</div>`;
     byOrg[org].sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
       const row = document.createElement('div');
-      row.className = 'participant-row';
-      const checked = inCampaign.has(p.profile_id) ? 'checked' : '';
-      row.innerHTML = `<input type="checkbox" id="pp_${p.profile_id}" data-pid="${p.profile_id}" ${checked} onchange="updateParticipantsCount()"><label for="pp_${p.profile_id}">${p.name}</label>`;
+      const isIn = inCampaign.has(p.profile_id);
+      row.className = 'participant-row' + (isIn ? ' in-campaign' : '');
+      const checked = isIn ? 'checked' : '';
+      row.innerHTML = `<input type="checkbox" id="pp_${p.profile_id}" data-pid="${p.profile_id}" ${checked} onchange="toggleParticipantRow(this)"><label for="pp_${p.profile_id}">${p.name}</label>`;
       group.appendChild(row);
     });
     body.appendChild(group);
@@ -1461,10 +1468,32 @@ async function openParticipantsPanel() {
   document.getElementById('participantsOverlay').classList.add('show');
 }
 
+function toggleParticipantRow(cb) {
+  cb.closest('.participant-row').classList.toggle('in-campaign', cb.checked);
+  updateParticipantsCount();
+}
+
 function updateParticipantsCount() {
   const checks = document.querySelectorAll('#participantsBody input[type=checkbox]');
+  const total = checks.length;
   const checked = Array.from(checks).filter(c => c.checked).length;
-  document.getElementById('participantsCount').textContent = `${checked} משתתפים נבחרו`;
+  document.getElementById('participantsCount').textContent = `${checked} מתוך ${total} נבחרו`;
+}
+
+function selectAllParticipants() {
+  document.querySelectorAll('#participantsBody input[type=checkbox]').forEach(cb => {
+    cb.checked = true;
+    cb.closest('.participant-row').classList.add('in-campaign');
+  });
+  updateParticipantsCount();
+}
+
+function clearAllParticipants() {
+  document.querySelectorAll('#participantsBody input[type=checkbox]').forEach(cb => {
+    cb.checked = false;
+    cb.closest('.participant-row').classList.remove('in-campaign');
+  });
+  updateParticipantsCount();
 }
 
 function closeParticipantsPanel() {
@@ -1502,6 +1531,10 @@ loadCampaignDropdown().then(() => loadDashboardData());
     <div class="participants-header">
       <h3>👥 משתתפים בקמפיין</h3>
       <button class="participants-close" onclick="closeParticipantsPanel()">✕</button>
+    </div>
+    <div class="participants-actions">
+      <button onclick="selectAllParticipants()">✓ בחר הכל</button>
+      <button onclick="clearAllParticipants()">✕ נקה הכל</button>
     </div>
     <div class="participants-body" id="participantsBody"></div>
     <div class="participants-footer">
