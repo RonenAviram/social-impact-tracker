@@ -141,6 +141,24 @@ body.admin-mode .goals-edit-bar{display:flex}
 .admin-field input,.admin-field select{width:100%;padding:7px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit}
 .admin-btn{padding:7px 14px;background:var(--blue-400);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:6px}
 
+/* Participants Panel */
+.participants-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
+.participants-overlay.show{display:flex}
+.participants-modal{background:#fff;border-radius:var(--radius);width:90%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.participants-header{padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center}
+.participants-header h3{font-size:16px;font-weight:600;color:var(--blue-900)}
+.participants-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);padding:4px 8px}
+.participants-body{overflow-y:auto;padding:16px 20px;flex:1}
+.participants-org-group{margin-bottom:16px}
+.participants-org-name{font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--gray-100)}
+.participant-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+.participant-row label{flex:1;font-size:13px;color:var(--gray-700);cursor:pointer}
+.participant-row input[type=checkbox]{accent-color:var(--blue-400);cursor:pointer;width:16px;height:16px}
+.participants-footer{padding:12px 20px;border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center}
+.participants-count{font-size:12px;color:var(--gray-500)}
+.participants-save{padding:8px 20px;background:var(--blue-400);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.participants-save:hover{background:var(--blue-600)}
+
 /* Data Table */
 .data-table-wrap{background:#fff;border-radius:var(--radius);padding:18px;border:1px solid var(--gray-200);margin-bottom:20px;overflow-x:auto;display:none}
 .data-table-wrap.show{display:block}
@@ -249,6 +267,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <a href="admin-campaign.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--blue-400)">➕ קמפיין חדש</a>
       <a href="admin-pool.html" target="_blank" class="admin-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;background:var(--teal-400)">👥 ניהול מאגר</a>
+      <button class="admin-btn" style="background:var(--purple-400)" onclick="openParticipantsPanel()">👥 משתתפים בקמפיין</button>
       <button class="admin-btn" style="background:var(--gray-600)" onclick="exportCSV()">📥 ייצוא CSV</button>
       <button class="admin-btn" style="background:var(--green-600,#16a34a)" onclick="copyFormLink()">📋 העתק קישור להזנת תוכן</button>
       <button class="admin-btn" style="background:#dc2626" onclick="deleteCampaign()">🗑️ מחק קמפיין</button>
@@ -1400,8 +1419,97 @@ function changeTopic() {
   loadDashboardData();
 }
 
+// === Participants Panel ===
+async function openParticipantsPanel() {
+  if (!activeCampaignId) { showToast('אין קמפיין פעיל'); return; }
+  const db = CONFIG.db();
+
+  // Get all pool profiles
+  const { data: allProfiles } = await db.rpc('get_all_profiles');
+  // Get current campaign participants
+  const { data: campParts } = await db.from('campaign_participants').select('profile_id').eq('campaign_id', activeCampaignId);
+
+  const inCampaign = new Set((campParts || []).map(cp => cp.profile_id));
+  const profiles = (allProfiles || []).filter(p => p.is_active);
+
+  // Group by org
+  const byOrg = {};
+  profiles.forEach(p => {
+    const org = p.org_name || 'ללא ארגון';
+    if (!byOrg[org]) byOrg[org] = [];
+    byOrg[org].push(p);
+  });
+
+  const body = document.getElementById('participantsBody');
+  body.innerHTML = '';
+
+  Object.keys(byOrg).sort().forEach(org => {
+    const group = document.createElement('div');
+    group.className = 'participants-org-group';
+    group.innerHTML = `<div class="participants-org-name">${org}</div>`;
+    byOrg[org].sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'participant-row';
+      const checked = inCampaign.has(p.profile_id) ? 'checked' : '';
+      row.innerHTML = `<input type="checkbox" id="pp_${p.profile_id}" data-pid="${p.profile_id}" ${checked} onchange="updateParticipantsCount()"><label for="pp_${p.profile_id}">${p.name}</label>`;
+      group.appendChild(row);
+    });
+    body.appendChild(group);
+  });
+
+  updateParticipantsCount();
+  document.getElementById('participantsOverlay').classList.add('show');
+}
+
+function updateParticipantsCount() {
+  const checks = document.querySelectorAll('#participantsBody input[type=checkbox]');
+  const checked = Array.from(checks).filter(c => c.checked).length;
+  document.getElementById('participantsCount').textContent = `${checked} משתתפים נבחרו`;
+}
+
+function closeParticipantsPanel() {
+  document.getElementById('participantsOverlay').classList.remove('show');
+}
+
+async function saveParticipants() {
+  const db = CONFIG.db();
+  const checks = document.querySelectorAll('#participantsBody input[type=checkbox]');
+  const selectedIds = Array.from(checks).filter(c => c.checked).map(c => c.dataset.pid);
+
+  // Delete existing participants for this campaign
+  const { error: delErr } = await db.from('campaign_participants').delete().eq('campaign_id', activeCampaignId);
+  if (delErr) { showToast('שגיאה: ' + delErr.message); return; }
+
+  // Insert new participants
+  if (selectedIds.length > 0) {
+    const rows = selectedIds.map(pid => ({ campaign_id: activeCampaignId, profile_id: pid }));
+    const { error: insErr } = await db.from('campaign_participants').insert(rows);
+    if (insErr) { showToast('שגיאה: ' + insErr.message); return; }
+  }
+
+  showToast(`✅ ${selectedIds.length} משתתפים עודכנו`);
+  closeParticipantsPanel();
+  loadDashboardData(); // refresh
+}
+
 // Initial load from Supabase
 loadCampaignDropdown().then(() => loadDashboardData());
 </script>
+
+<!-- Participants Modal -->
+<div class="participants-overlay" id="participantsOverlay" onclick="if(event.target===this)closeParticipantsPanel()">
+  <div class="participants-modal">
+    <div class="participants-header">
+      <h3>👥 משתתפים בקמפיין</h3>
+      <button class="participants-close" onclick="closeParticipantsPanel()">✕</button>
+    </div>
+    <div class="participants-body" id="participantsBody"></div>
+    <div class="participants-footer">
+      <span class="participants-count" id="participantsCount">0 משתתפים נבחרו</span>
+      <button class="participants-save" onclick="saveParticipants()">שמירה</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
