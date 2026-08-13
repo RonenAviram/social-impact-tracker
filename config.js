@@ -10,6 +10,9 @@ const CONFIG = {
   // Campaign ID — set after running migration, then update this value
   CAMPAIGN_ID: '87ffac94-18ab-43e3-bedb-f7cc877973f8',
 
+  // Default admin password hash (SHA-256 of REDLINES2026) — fallback when no campaigns exist
+  DEFAULT_ADMIN_HASH: 'deef947764a90eda2b5a09539c30f9b68f7d139ca5fd44775bf65dc9ff88cf2d',
+
   _supabase: null,
   db() {
     if (!this._supabase && typeof supabase !== 'undefined') {

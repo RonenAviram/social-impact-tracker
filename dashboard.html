@@ -1258,10 +1258,23 @@ async function toggleAdmin() {
     if (!pass) { cb.checked = false; return; }
 
     const db = CONFIG.db();
-    const { data: isValid } = await db.rpc('verify_admin', {
-      p_campaign_id: activeCampaignId,
-      p_password: pass
-    });
+    let isValid = false;
+
+    if (activeCampaignId) {
+      const { data } = await db.rpc('verify_admin', {
+        p_campaign_id: activeCampaignId,
+        p_password: pass
+      });
+      isValid = !!data;
+    }
+
+    // Fallback: client-side hash check (when no campaigns or RPC returns false)
+    if (!isValid) {
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(pass));
+      const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      isValid = (hashHex === CONFIG.DEFAULT_ADMIN_HASH);
+    }
 
     if (!isValid) {
       cb.checked = false;

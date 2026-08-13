@@ -781,7 +781,9 @@ async function launchCampaign() {
       .order('updated_at', { ascending: false })
       .limit(1)
       .single();
-    const adminHash = existingCamp ? existingCamp.admin_password_hash : null;
+    const adminHash = (existingCamp && existingCamp.admin_password_hash)
+      ? existingCamp.admin_password_hash
+      : CONFIG.DEFAULT_ADMIN_HASH;
 
     // 2. Create campaign
     const { data: camp, error: campErr } = await db.from('campaigns')
