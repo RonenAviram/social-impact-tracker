@@ -296,7 +296,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     <div class="metric-card"><div class="accent" style="background:var(--blue-400)"></div><div class="label">חשיפות כוללות</div><div class="value" id="totalReach">—</div><div class="change up" id="changeReach"></div></div>
     <div class="metric-card"><div class="accent" style="background:var(--teal-400)"></div><div class="label">אינטראקציות</div><div class="value" id="totalEng">—</div><div class="change up" id="changeEng"></div></div>
     <div class="metric-card"><div class="accent" style="background:var(--coral-400)"></div><div class="label">תכנים</div><div class="value" id="totalContent">—</div><div class="change up" id="changeContent"></div></div>
-    <div class="metric-card"><div class="accent" style="background:var(--purple-400)"></div><div class="label">משתתפים פעילים</div><div class="value" id="totalPeople">—</div><div class="change up" id="changePeople"></div></div>
+    <div class="metric-card"><div class="accent" style="background:var(--purple-400)"></div><div class="label">יוצרי תוכן פעילים</div><div class="value" id="totalPeople">—</div><div class="change up" id="changePeople"></div></div>
   </div>
 
   <!-- Goals -->
@@ -341,7 +341,7 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
     </div>
     <div class="chart-card">
       <h3>חשיפות לאורך זמן</h3>
-      <div class="chart-sub">חשיפות יומיות מצטברות</div>
+      <div class="chart-sub">חשיפות יומיות מצטברות · חשיפה = כמה אנשים ראו את התוכן (ללא פעולה אקטיבית)</div>
       <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
     </div>
   </div>
@@ -689,7 +689,7 @@ function computeGoalValue(goal, data) {
   const fallback = {
     'חשיפות כוללות': d.reduce((s, e) => s + e.reach, 0),
     'תכנים שהועלו': d.length,
-    'משתתפים פעילים': new Set(d.map(e => e.person.id)).size
+    'יוצרי תוכן פעילים': new Set(d.map(e => e.person.id)).size
   };
   return fallback[goal.name] || 0;
 }
@@ -769,7 +769,7 @@ const DASH_PRIMARY_TYPES = [
   { type: 'total_reach', label: 'חשיפות כוללות', icon: '👁️' },
   { type: 'total_engagement', label: 'אינטראקציות כוללות', icon: '💬' },
   { type: 'total_content', label: 'כמות תכנים', icon: '📝' },
-  { type: 'active_participants', label: 'משתתפים פעילים', icon: '👥' },
+  { type: 'active_participants', label: 'יוצרי תוכן פעילים', icon: '👥' },
   { type: 'active_platforms', label: 'כמות פלטפורמות', icon: '📱' }
 ];
 
