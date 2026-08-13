@@ -428,6 +428,12 @@ async function loadCampaignDropdown() {
   const { data: camps } = await db.from('campaigns').select('id, name, status, created_at').order('created_at', { ascending: false });
   if (!camps || camps.length === 0) return;
   allCampaigns = camps;
+
+  // If activeCampaignId doesn't exist in DB, switch to first available
+  if (!allCampaigns.find(c => c.id === activeCampaignId)) {
+    activeCampaignId = allCampaigns[0].id;
+  }
+
   renderCampaignDropdown();
 }
 
