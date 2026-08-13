@@ -813,7 +813,7 @@ async function dashAddPrimaryGoal() {
   if (!val || Number(val) <= 0) { valInput.style.borderColor = 'var(--red-400)'; showToast('הזינו ערך מספרי'); return; }
   const def = DASH_PRIMARY_TYPES.find(t => t.type === type);
   const db = CONFIG.db();
-  const { error } = await db.from('campaign_goals').insert({
+  const insertData = {
     campaign_id: activeCampaignId,
     name: def.label,
     goal_type: def.type,
@@ -821,8 +821,10 @@ async function dashAddPrimaryGoal() {
     metric_id: null,
     target_value: Number(val),
     sort_order: (window._campaignGoals || []).length + 1
-  });
-  if (error) { showToast('שגיאה בשמירה'); console.error(error); return; }
+  };
+  console.log('Adding primary goal:', insertData);
+  const { error } = await db.from('campaign_goals').insert(insertData);
+  if (error) { showToast('שגיאה: ' + error.message); console.error('Goal insert error:', error); return; }
   valInput.value = '';
   sel.value = '';
   await reloadGoals();
@@ -839,7 +841,7 @@ async function dashAddSecondaryGoal() {
   const plat = CONFIG.getPlatform(pid);
   const metric = plat.metrics.find(m => m.id === mid);
   const db = CONFIG.db();
-  const { error } = await db.from('campaign_goals').insert({
+  const insertData2 = {
     campaign_id: activeCampaignId,
     name: plat.name + ' — ' + metric.label,
     goal_type: 'platform_metric',
@@ -847,8 +849,10 @@ async function dashAddSecondaryGoal() {
     metric_id: mid,
     target_value: Number(val),
     sort_order: (window._campaignGoals || []).length + 1
-  });
-  if (error) { showToast('שגיאה בשמירה'); console.error(error); return; }
+  };
+  console.log('Adding secondary goal:', insertData2);
+  const { error } = await db.from('campaign_goals').insert(insertData2);
+  if (error) { showToast('שגיאה: ' + error.message); console.error('Goal insert error:', error); return; }
   valInput.value = '';
   document.getElementById('dashAddPlatformSelect').value = '';
   document.getElementById('dashAddMetricSelect').innerHTML = '<option value="">מדד...</option>';
