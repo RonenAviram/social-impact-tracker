@@ -466,8 +466,9 @@ async function init() {
         hideLoading();
         return;
       }
-      // If not in campaign anymore, clear session
+      // If not in campaign anymore, clear session and notify
       CONFIG.clearSession();
+      showToast('לא נמצאה הרשמה לקמפיין — יש להירשם מחדש');
     }
 
     hideLoading();
