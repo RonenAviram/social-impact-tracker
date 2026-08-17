@@ -1271,7 +1271,7 @@ function renderLinkArchive() {
     div.className = 'link-item';
     const hebrewDate = e.date.slice(8) + '/' + e.date.slice(5,7);
     div.innerHTML = `<span class="li-icon">${plat ? plat.icon : '📄'}</span>
-      <div class="li-info"><div class="li-name">${e.person.name}</div><div class="li-meta">${e.person.orgDisplay} · ${e.type} · ${hebrewDate}</div></div>
+      <div class="li-info"><div class="li-name">${e.person.name} — ${e.person.orgDisplay}</div><div class="li-meta">${e.type} · ${hebrewDate}</div></div>
       <a class="li-link" href="${e.link}" target="_blank" rel="noopener">${e.link}</a>
       <button class="li-copy" data-link="${e.link.replace(/"/g,'&quot;')}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`;
     list.appendChild(div);
