@@ -436,8 +436,8 @@ async function init() {
       org_id: p.org_id
     }));
 
-    // Pre-populate participants with pool
-    participants = [...poolProfiles];
+    // Don't pre-populate — participants self-register via campaign link
+    participants = [];
 
     renderOrgs();
     renderParticipants();
