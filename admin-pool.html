@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>קווים אדומים | ניהול מאגר</title>
+<title>קווים אדומים | ניהול ארגונים</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
 --blue-50:#E6F1FB;--blue-100:#B5D4F4;--blue-200:#85B7EB;--blue-400:#378ADD;--blue-600:#185FA5;--blue-800:#0C447C;--blue-900:#042C53;
 --teal-50:#E1F5EE;--teal-100:#9FE1CB;--teal-200:#5DCAA5;--teal-400:#1D9E75;--teal-600:#0F6E56;--teal-800:#085041;
---green-50:#EAF3DE;--green-400:#639922;
 --red-50:#FCEBEB;--red-400:#E24B4A;
 --amber-50:#FFF8E1;--amber-400:#EF9F27;--amber-600:#854F0B;
 --gray-50:#F8F9FA;--gray-100:#F1F3F5;--gray-200:#E9ECEF;--gray-300:#DEE2E6;--gray-400:#ADB5BD;--gray-500:#868E96;--gray-600:#495057;--gray-700:#343A40;--gray-800:#212529;
@@ -18,7 +17,6 @@
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);direction:rtl;min-height:100vh}
 :focus-visible{outline:2px solid var(--blue-400);outline-offset:2px;border-radius:4px}
 
-/* Top Bar */
 .topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .topbar-right{display:flex;align-items:center;gap:12px}
 .topbar-logo{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0}
@@ -26,144 +24,60 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .topbar h1{font-size:18px;font-weight:600;color:var(--blue-900)}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .admin-badge{background:var(--amber-50);color:var(--amber-600);font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;display:flex;align-items:center;gap:4px}
-.user-chip{display:flex;align-items:center;gap:8px;background:var(--gray-50);padding:5px 12px 5px 5px;border-radius:20px}
-.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-400);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
-.user-chip .uname{font-size:13px;color:var(--gray-700);font-weight:500}
 
-.main{max-width:900px;margin:0 auto;padding:28px 16px 60px}
+.main{max-width:600px;margin:0 auto;padding:28px 16px 60px}
 
-/* Nav */
 .admin-nav{display:flex;gap:6px;margin-bottom:24px}
 .nav-tab{padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;text-decoration:none;color:var(--gray-500);border:1.5px solid var(--gray-200);transition:all .2s;background:#fff}
 .nav-tab:hover{border-color:var(--blue-200);color:var(--blue-600)}
 .nav-tab.active{background:var(--blue-400);color:#fff;border-color:var(--blue-400)}
 
-/* Page header */
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.page-header h2{font-size:22px;font-weight:700;color:var(--blue-900)}
-.page-header p{font-size:14px;color:var(--gray-500);width:100%}
-.header-actions{display:flex;gap:8px}
+.page-header{margin-bottom:20px}
+.page-header h2{font-size:22px;font-weight:700;color:var(--blue-900);margin-bottom:4px}
+.page-header p{font-size:14px;color:var(--gray-500)}
 
-/* Stats */
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
-@media(max-width:500px){.stats-row{grid-template-columns:1fr}}
-.stat-card{background:#fff;border-radius:var(--radius);padding:16px 18px;border:1px solid var(--gray-200);text-align:center}
-.stat-card .stat-num{font-size:28px;font-weight:700;color:var(--blue-900)}
-.stat-card .stat-label{font-size:12px;color:var(--gray-500);margin-top:2px}
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:20px}
 
-/* Card */
-.card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:20px;margin-bottom:16px}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.card-title{font-size:16px;font-weight:600;color:var(--blue-800)}
-.card-sub{font-size:12px;color:var(--gray-400)}
-
-/* Tabs */
-.tab-bar{display:flex;border-bottom:2px solid var(--gray-200);margin-bottom:16px}
-.tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--gray-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.tab:hover{color:var(--gray-600)}
-.tab.active{color:var(--blue-600);border-bottom-color:var(--blue-400)}
-.tab-content{display:none}
-.tab-content.active{display:block}
-
-/* Search */
-.search-bar{display:flex;gap:8px;margin-bottom:16px}
-.search-bar input{flex:1;padding:9px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;font-family:inherit}
-.search-bar input:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
-.search-bar input::placeholder{color:var(--gray-400)}
-
-/* Table */
-.pool-table{width:100%;border-collapse:collapse}
-.pool-table th{font-size:11px;font-weight:600;color:var(--gray-400);text-align:right;padding:8px 12px;border-bottom:2px solid var(--gray-200);text-transform:uppercase;letter-spacing:.3px}
-.pool-table td{padding:10px 12px;border-bottom:1px solid var(--gray-100);font-size:14px;vertical-align:middle}
-.pool-table tr:hover td{background:var(--gray-50)}
-.pool-table .name-cell{font-weight:500;color:var(--gray-800)}
-.org-badge{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--teal-50);color:var(--teal-800);white-space:nowrap}
-.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px}
-.status-dot.active{background:var(--green-400)}
-.status-dot.inactive{background:var(--gray-300)}
-.action-btns{display:flex;gap:4px}
-.action-btn{width:30px;height:30px;border-radius:6px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;color:var(--gray-400)}
-.action-btn:hover{background:var(--gray-100);color:var(--gray-700)}
-.action-btn.delete:hover{background:var(--red-50);color:var(--red-400)}
-
-/* Add row */
-.add-row{display:flex;gap:8px;align-items:flex-end;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);margin-top:12px}
-.add-row input,.add-row select{flex:1;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:#fff}
-.add-row input:focus,.add-row select:focus{outline:none;border-color:var(--blue-400)}
-
-/* Org tags */
-.org-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.org-tag{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:var(--teal-50);color:var(--teal-800);font-size:13px;font-weight:500}
+.org-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.org-tag{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:20px;background:var(--teal-50);color:var(--teal-800);font-size:14px;font-weight:500}
 .org-tag .count{font-size:11px;background:var(--teal-200);color:var(--teal-800);padding:1px 7px;border-radius:10px}
-.org-tag .remove-tag{border:none;background:none;color:var(--teal-400);cursor:pointer;font-size:15px;font-weight:700;padding:0 2px;line-height:1}
+.org-tag .remove-tag{border:none;background:none;color:var(--teal-400);cursor:pointer;font-size:16px;font-weight:700;padding:0 2px;line-height:1}
 .org-tag .remove-tag:hover{color:var(--red-400)}
+.org-tag.other{background:var(--gray-100);color:var(--gray-600)}
 
-/* Buttons */
-.btn{padding:9px 18px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.add-row{display:flex;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-100)}
+.add-row input{flex:1;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:#fff}
+.add-row input:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.btn{padding:9px 18px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
 .btn-primary{background:var(--blue-400);color:#fff}
 .btn-primary:hover{background:var(--blue-600)}
-.btn-secondary{background:transparent;color:var(--blue-600);border:1.5px solid var(--blue-200)}
-.btn-secondary:hover{background:var(--blue-50)}
-.btn-success{background:var(--teal-400);color:#fff}
-.btn-success:hover{background:var(--teal-600)}
-.btn-sm{padding:6px 12px;font-size:12px}
 
-/* CSV upload */
-.csv-zone{border:2px dashed var(--gray-300);border-radius:var(--radius);padding:30px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px}
-.csv-zone:hover{border-color:var(--blue-400);background:var(--blue-50)}
-.csv-zone.dragover{border-color:var(--blue-400);background:var(--blue-50)}
-.csv-zone .csv-icon{font-size:36px;margin-bottom:8px;display:block}
-.csv-zone .csv-title{font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px}
-.csv-zone .csv-hint{font-size:12px;color:var(--gray-400)}
+.note{font-size:12px;color:var(--gray-400);margin-top:12px}
 
-/* Preview table */
-.preview-wrap{max-height:300px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:var(--radius-sm);margin-bottom:12px}
-.preview-table{width:100%;border-collapse:collapse}
-.preview-table th{font-size:11px;font-weight:600;color:var(--gray-400);text-align:right;padding:6px 10px;border-bottom:1px solid var(--gray-200);background:var(--gray-50);position:sticky;top:0}
-.preview-table td{padding:6px 10px;border-bottom:1px solid var(--gray-100);font-size:13px}
-.preview-table .new-row{background:var(--green-50)}
-.preview-table .existing-row{background:var(--gray-50);color:var(--gray-400)}
-.preview-stats{display:flex;gap:16px;margin-bottom:12px;font-size:13px}
-.preview-stats .ps-new{color:var(--green-400);font-weight:600}
-.preview-stats .ps-existing{color:var(--gray-400)}
-
-/* Toast */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-/* Empty state */
-.empty-state{text-align:center;padding:40px 20px;color:var(--gray-400)}
-.empty-state .empty-icon{font-size:48px;margin-bottom:12px;display:block}
-.empty-state p{font-size:14px}
-
-/* Mobile enhancements */
-@media(max-width:600px){
-  .topbar{padding:8px 12px}
-  .topbar h1{font-size:15px}
-  .topbar-left .user-chip .uname{display:none}
-  .main{padding:16px 10px 40px}
-  .admin-nav{gap:4px}
-  .nav-tab{padding:6px 12px;font-size:12px}
-  .page-header h2{font-size:18px}
-  .stat-card .stat-num{font-size:22px}
-  .pool-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .add-row{flex-wrap:wrap}
-  .add-row input,.add-row select{flex:1 1 100%;min-width:0}
-  .org-tags{gap:4px}
-  .org-tag{font-size:12px;padding:5px 10px}
-  .csv-zone{padding:20px 14px}
-}
 .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
 .loading-overlay.hidden{display:none}
 .spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--blue-400);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{margin-top:12px;font-size:14px;color:var(--gray-500)}
+
+@media(max-width:600px){
+  .topbar{padding:8px 12px}
+  .topbar h1{font-size:15px}
+  .main{padding:16px 10px 40px}
+  .admin-nav{gap:4px}
+  .nav-tab{padding:6px 12px;font-size:12px}
+  .page-header h2{font-size:18px}
+  .org-tags{gap:6px}
+  .org-tag{font-size:13px;padding:6px 12px}
+}
 </style>
 </head>
 <body>
 <div class="loading-overlay" id="loadingOverlay" role="status" aria-label="טוען"><div class="spinner"></div><div class="loading-text">טוען...</div></div>
 
-<!-- Top Bar -->
 <div class="topbar" role="banner">
   <div class="topbar-right">
     <div class="topbar-logo"><img src="logo.jpg" alt="קווים אדומים"></div>
@@ -171,117 +85,28 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
   </div>
   <div class="topbar-left">
     <div class="admin-badge">⚙️ ממשק ניהול</div>
-    <div class="user-chip">
-      <div class="avatar">מפ</div>
-      <span class="uname">מיכל פרינס</span>
-    </div>
   </div>
 </div>
 
 <div class="main">
-
-  <!-- Admin nav -->
   <div class="admin-nav">
     <a class="nav-tab" href="admin-campaign.html">בניית קמפיין</a>
-    <a class="nav-tab active" href="admin-pool.html">ניהול מאגר</a>
+    <a class="nav-tab active" href="admin-pool.html">ניהול ארגונים</a>
     <a class="nav-tab" href="dashboard.html">דשבורד</a>
   </div>
 
   <div class="page-header">
-    <h2>ניהול מאגר</h2>
-    <p>אנשים וארגונים במאגר זמינים לייבוא מהיר בעת בניית קמפיין חדש</p>
+    <h2>ניהול ארגונים</h2>
+    <p>ארגונים מופיעים ברשימה בטופס ההרשמה. ניהול משתתפים נעשה מתוך הדשבורד.</p>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-num" id="statPeople">12</div>
-      <div class="stat-label">אנשים במאגר</div>
+  <div class="card">
+    <div class="org-tags" id="orgTagsDisplay"></div>
+    <div class="add-row">
+      <input type="text" id="newOrgName" placeholder="שם ארגון חדש...">
+      <button class="btn btn-primary" onclick="addOrg()">+ הוספה</button>
     </div>
-    <div class="stat-card">
-      <div class="stat-num" id="statOrgs">8</div>
-      <div class="stat-label">ארגונים</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num" id="statCampaigns">1</div>
-      <div class="stat-label">קמפיינים (כל הזמנים)</div>
-    </div>
-  </div>
-
-  <!-- Tabs -->
-  <div class="card" style="padding:0">
-    <div class="tab-bar">
-      <div class="tab active" onclick="switchTab('people')">אנשים</div>
-      <div class="tab" onclick="switchTab('orgs')">ארגונים</div>
-      <div class="tab" onclick="switchTab('import')">ייבוא CSV</div>
-    </div>
-
-    <!-- PEOPLE TAB -->
-    <div class="tab-content active" id="tab-people" style="padding:20px">
-      <div class="search-bar">
-        <input type="text" id="searchPeople" placeholder="חיפוש לפי שם או ארגון..." oninput="renderPeople()">
-        <button class="btn btn-secondary btn-sm" onclick="exportPool()">📥 ייצוא CSV</button>
-      </div>
-
-      <table class="pool-table">
-        <thead>
-          <tr>
-            <th>שם</th>
-            <th>ארגון</th>
-            <th>קמפיינים</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="peopleBody"></tbody>
-      </table>
-
-      <div class="add-row">
-        <input type="text" id="newPersonName" placeholder="שם מלא...">
-        <select id="newPersonOrg" aria-label="ארגון"></select>
-        <button class="btn btn-primary btn-sm" onclick="addPerson()">+ הוספה</button>
-      </div>
-    </div>
-
-    <!-- ORGS TAB -->
-    <div class="tab-content" id="tab-orgs" style="padding:20px">
-      <div style="margin-bottom:16px;font-size:13px;color:var(--gray-500)">לחצו על × להסרת ארגון. הסרת ארגון לא מוחקת את האנשים שמשויכים אליו.</div>
-
-      <div class="org-tags" id="orgTagsDisplay"></div>
-
-      <div class="add-row" style="margin-top:16px">
-        <input type="text" id="newOrgName" placeholder="שם ארגון חדש...">
-        <button class="btn btn-primary btn-sm" onclick="addOrg()">+ הוספה</button>
-      </div>
-    </div>
-
-    <!-- IMPORT TAB -->
-    <div class="tab-content" id="tab-import" style="padding:20px">
-      <div style="margin-bottom:16px">
-        <div style="font-size:13px;color:var(--gray-500);margin-bottom:8px">העלו קובץ CSV עם עמודות: <strong>שם, ארגון</strong>. אנשים שכבר קיימים במאגר לא יתווספו שוב.</div>
-        <a href="#" onclick="downloadTemplate();return false" style="font-size:12px;color:var(--blue-600)">📄 הורדת תבנית CSV לדוגמה</a>
-      </div>
-
-      <div class="csv-zone" id="csvZone" onclick="document.getElementById('csvFile').click()">
-        <span class="csv-icon">📁</span>
-        <div class="csv-title">גרירת קובץ CSV לכאן</div>
-        <div class="csv-hint">או לחצו לבחירת קובץ</div>
-      </div>
-      <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleCSV(this)">
-
-      <div id="csvPreview" style="display:none">
-        <div class="preview-stats" id="previewStats"></div>
-        <div class="preview-wrap">
-          <table class="preview-table">
-            <thead><tr><th></th><th>שם</th><th>ארגון</th></tr></thead>
-            <tbody id="previewBody"></tbody>
-          </table>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn btn-success" onclick="confirmImport()">✓ ייבוא למאגר</button>
-          <button class="btn btn-secondary" onclick="cancelImport()">ביטול</button>
-        </div>
-      </div>
-    </div>
+    <div class="note">ארגון "אחר" מאפשר למשתתפים להזין שם ארגון חופשי בטופס ההרשמה.</div>
   </div>
 </div>
 
@@ -290,48 +115,26 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// === DATA (loaded from Supabase) ===
-let pool = [];    // [{profile_id, name, org, org_id, campaigns}]
-let orgs = [];    // [{id, name}]
-let pendingImport = [];
+let orgs = [];
+let profileCounts = {}; // org_id → count of active profiles
 
 function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
 
-// === INIT ===
 async function init() {
   const db = CONFIG.db();
   if (!db) { hideLoading(); showToast('שגיאה: Supabase לא מוגדר'); return; }
 
   try {
-    // Load all profiles with org names
-    const { data: profiles, error: pErr } = await db.rpc('get_all_profiles');
-    if (pErr) throw pErr;
-
-    // Count campaigns per profile
-    const { data: cpRows } = await db.from('campaign_participants').select('profile_id');
-    const cpCount = {};
-    (cpRows || []).forEach(r => { cpCount[r.profile_id] = (cpCount[r.profile_id] || 0) + 1; });
-
-    pool = (profiles || []).map(p => ({
-      profile_id: p.profile_id,
-      name: p.name,
-      org: p.org_name,
-      org_id: p.org_id,
-      role: p.role,
-      is_active: p.is_active,
-      campaigns: cpCount[p.profile_id] || 0
-    }));
-
-    // Load orgs
-    const { data: orgRows, error: oErr } = await db.from('organizations').select('id, name').order('name');
-    if (oErr) throw oErr;
+    const { data: orgRows } = await db.from('organizations').select('id, name').order('name');
     orgs = orgRows || [];
 
-    // Count campaigns for stats
-    const { count: campCount } = await db.from('campaigns').select('id', { count: 'exact', head: true });
-    document.getElementById('statCampaigns').textContent = campCount || 0;
+    // Count active profiles per org
+    const { data: profiles } = await db.rpc('get_all_profiles');
+    profileCounts = {};
+    (profiles || []).filter(p => p.is_active).forEach(p => {
+      profileCounts[p.org_id] = (profileCounts[p.org_id] || 0) + 1;
+    });
 
-    renderPeople();
     renderOrgs();
     hideLoading();
   } catch (e) {
@@ -341,100 +144,14 @@ async function init() {
   }
 }
 
-// === TABS ===
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
-}
-
-// === PEOPLE ===
-function renderPeople() {
-  const search = (document.getElementById('searchPeople').value || '').trim().toLowerCase();
-  const activePool = pool.filter(p => p.is_active !== false);
-  const filtered = activePool.filter(p => {
-    if (!search) return true;
-    return p.name.toLowerCase().includes(search) || p.org.toLowerCase().includes(search);
-  });
-
-  const tbody = document.getElementById('peopleBody');
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><span class="empty-icon">🔍</span><p>לא נמצאו תוצאות</p></div></td></tr>`;
-  } else {
-    tbody.innerHTML = filtered.map(p => `<tr>
-        <td class="name-cell">${p.name}</td>
-        <td><span class="org-badge">${p.org}</span></td>
-        <td style="font-size:12px;color:var(--gray-400)">${p.campaigns > 0 ? p.campaigns + ' קמפיינים' : 'טרם השתתף/ה'}</td>
-        <td><div class="action-btns">
-          <button class="action-btn delete" onclick="removePerson('${p.profile_id}')" title="הסרה">🗑</button>
-        </div></td>
-      </tr>`).join('');
-  }
-  updateStats();
-  updateOrgSelect();
-}
-
-async function addPerson() {
-  const nameInput = document.getElementById('newPersonName');
-  const orgSelect = document.getElementById('newPersonOrg');
-  const name = nameInput.value.trim();
-  const orgId = orgSelect.value;
-  if (!name || !orgId) { showToast('יש להזין שם ולבחור ארגון'); return; }
-
-  const orgObj = orgs.find(o => o.id === orgId);
-  if (pool.some(p => p.name === name && p.org_id === orgId && p.is_active !== false)) {
-    showToast('אדם זה כבר קיים במאגר'); return;
-  }
-
-  try {
-    const db = CONFIG.db();
-    const { data, error } = await db.from('profiles')
-      .insert({ name, org_id: orgId, role: 'member' })
-      .select('id').single();
-    if (error) throw error;
-
-    pool.push({ profile_id: data.id, name, org: orgObj.name, org_id: orgId, role: 'member', is_active: true, campaigns: 0 });
-    nameInput.value = '';
-    orgSelect.selectedIndex = 0;
-    renderPeople();
-    showToast(name + ' נוסף/ה למאגר');
-  } catch (e) {
-    console.error('Add person error:', e);
-    showToast('שגיאה בהוספה');
-  }
-}
-
-async function removePerson(profileId) {
-  try {
-    const db = CONFIG.db();
-    // Soft-delete: mark as inactive (can't hard-delete if has content_entries)
-    const { error } = await db.from('profiles').update({ is_active: false }).eq('id', profileId);
-    if (error) throw error;
-
-    const p = pool.find(x => x.profile_id === profileId);
-    if (p) p.is_active = false;
-    renderPeople();
-    renderOrgs();
-    showToast((p ? p.name : '') + ' הוסר/ה מהמאגר');
-  } catch (e) {
-    console.error('Remove person error:', e);
-    showToast('שגיאה בהסרה');
-  }
-}
-
-function updateOrgSelect() {
-  const sel = document.getElementById('newPersonOrg');
-  sel.innerHTML = '<option value="">בחר ארגון...</option>' + orgs.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
-}
-
-// === ORGS ===
 function renderOrgs() {
   const container = document.getElementById('orgTagsDisplay');
-  const activePool = pool.filter(p => p.is_active !== false);
   container.innerHTML = orgs.map(o => {
-    const count = activePool.filter(p => p.org_id === o.id).length;
-    return `<span class="org-tag">${o.name} <span class="count">${count}</span><button class="remove-tag" onclick="removeOrg('${o.id}')" title="הסרה">×</button></span>`;
+    const count = profileCounts[o.id] || 0;
+    const isOther = o.name === 'אחר';
+    const cls = isOther ? 'org-tag other' : 'org-tag';
+    const removeBtn = isOther ? '' : `<button class="remove-tag" onclick="removeOrg('${o.id}')" title="הסרה">×</button>`;
+    return `<span class="${cls}">${o.name} <span class="count">${count}</span>${removeBtn}</span>`;
   }).join('');
 }
 
@@ -448,12 +165,9 @@ async function addOrg() {
     const db = CONFIG.db();
     const { data, error } = await db.from('organizations').insert({ name }).select('id, name').single();
     if (error) throw error;
-
     orgs.push(data);
     input.value = '';
     renderOrgs();
-    updateOrgSelect();
-    updateStats();
     showToast('הארגון "' + name + '" נוסף');
   } catch (e) {
     console.error('Add org error:', e);
@@ -463,10 +177,9 @@ async function addOrg() {
 
 async function removeOrg(orgId) {
   const orgObj = orgs.find(o => o.id === orgId);
-  // Check if any active profiles belong to this org
-  const activeInOrg = pool.filter(p => p.org_id === orgId && p.is_active !== false);
-  if (activeInOrg.length > 0) {
-    showToast('לא ניתן להסיר ארגון עם אנשים פעילים (' + activeInOrg.length + ')');
+  const count = profileCounts[orgId] || 0;
+  if (count > 0) {
+    showToast('לא ניתן להסיר ארגון עם ' + count + ' משתתפים');
     return;
   }
 
@@ -474,168 +187,26 @@ async function removeOrg(orgId) {
     const db = CONFIG.db();
     const { error } = await db.from('organizations').delete().eq('id', orgId);
     if (error) throw error;
-
     orgs = orgs.filter(o => o.id !== orgId);
     renderOrgs();
-    updateOrgSelect();
-    updateStats();
     showToast('הארגון "' + (orgObj ? orgObj.name : '') + '" הוסר');
   } catch (e) {
     console.error('Remove org error:', e);
-    if (e.code === '23503') showToast('לא ניתן להסיר — יש אנשים משויכים');
+    if (e.code === '23503') showToast('לא ניתן להסיר — יש משתתפים משויכים');
     else showToast('שגיאה בהסרת ארגון');
   }
 }
 
-// === CSV ===
-const csvZone = document.getElementById('csvZone');
-csvZone.addEventListener('dragover', e => { e.preventDefault(); csvZone.classList.add('dragover'); });
-csvZone.addEventListener('dragleave', () => csvZone.classList.remove('dragover'));
-csvZone.addEventListener('drop', e => {
-  e.preventDefault();
-  csvZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file && file.name.endsWith('.csv')) processCSV(file);
-  else showToast('יש להעלות קובץ CSV');
-});
-
-function handleCSV(input) {
-  if (input.files[0]) processCSV(input.files[0]);
-}
-
-function processCSV(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
-    let start = 0;
-    if (lines[0] && (lines[0].includes('שם') || lines[0].toLowerCase().includes('name'))) start = 1;
-
-    pendingImport = [];
-    const activePool = pool.filter(p => p.is_active !== false);
-    for (let i = start; i < lines.length; i++) {
-      const parts = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
-      if (parts.length >= 2 && parts[0] && parts[1]) {
-        const exists = activePool.some(p => p.name === parts[0] && p.org === parts[1]);
-        pendingImport.push({name: parts[0], org: parts[1], exists});
-      }
-    }
-
-    const newCount = pendingImport.filter(p => !p.exists).length;
-    const existCount = pendingImport.filter(p => p.exists).length;
-    document.getElementById('previewStats').innerHTML = `
-      <span class="ps-new">✓ ${newCount} חדשים</span>
-      <span class="ps-existing">${existCount} כבר קיימים (לא ייובאו)</span>
-    `;
-
-    document.getElementById('previewBody').innerHTML = pendingImport.map(p => `
-      <tr class="${p.exists ? 'existing-row' : 'new-row'}">
-        <td>${p.exists ? '⏭' : '✓'}</td>
-        <td>${p.name}</td>
-        <td>${p.org}</td>
-      </tr>
-    `).join('');
-
-    document.getElementById('csvPreview').style.display = 'block';
-    csvZone.style.display = 'none';
-  };
-  reader.readAsText(file);
-}
-
-async function confirmImport() {
-  const newItems = pendingImport.filter(p => !p.exists);
-  if (newItems.length === 0) { cancelImport(); showToast('אין אנשים חדשים לייבוא'); return; }
-
-  try {
-    const db = CONFIG.db();
-
-    // Ensure all orgs exist
-    const uniqueOrgs = [...new Set(newItems.map(p => p.org))];
-    for (const orgName of uniqueOrgs) {
-      if (!orgs.some(o => o.name === orgName)) {
-        const { data, error } = await db.from('organizations').insert({ name: orgName }).select('id, name').single();
-        if (error && error.code !== '23505') throw error; // 23505 = unique violation (already exists)
-        if (data) orgs.push(data);
-        else {
-          // Already existed, fetch it
-          const { data: existing } = await db.from('organizations').select('id, name').eq('name', orgName).single();
-          if (existing && !orgs.some(o => o.id === existing.id)) orgs.push(existing);
-        }
-      }
-    }
-
-    // Insert profiles
-    let added = 0;
-    for (const item of newItems) {
-      const orgObj = orgs.find(o => o.name === item.org);
-      if (!orgObj) continue;
-      const { data, error } = await db.from('profiles')
-        .insert({ name: item.name, org_id: orgObj.id, role: 'member' })
-        .select('id').single();
-      if (error) { console.warn('Skip:', item.name, error.message); continue; }
-      pool.push({ profile_id: data.id, name: item.name, org: item.org, org_id: orgObj.id, role: 'member', is_active: true, campaigns: 0 });
-      added++;
-    }
-
-    cancelImport();
-    renderPeople();
-    renderOrgs();
-    showToast(added + ' אנשים יובאו למאגר');
-  } catch (e) {
-    console.error('Import error:', e);
-    showToast('שגיאה בייבוא');
-  }
-}
-
-function cancelImport() {
-  pendingImport = [];
-  document.getElementById('csvPreview').style.display = 'none';
-  document.getElementById('csvZone').style.display = 'block';
-  document.getElementById('csvFile').value = '';
-}
-
-function downloadTemplate() {
-  const csv = 'שם,ארגון\nישראל ישראלי,שם הארגון\nרונית כהן,שם הארגון\n';
-  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'תבנית_מאגר.csv';
-  a.click();
-}
-
-function exportPool() {
-  const activePool = pool.filter(p => p.is_active !== false);
-  let csv = 'שם,ארגון,קמפיינים\n';
-  activePool.forEach(p => csv += `${p.name},${p.org},${p.campaigns}\n`);
-  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'מאגר_אנשים.csv';
-  a.click();
-  showToast('הקובץ הורד');
-}
-
-// === STATS ===
-function updateStats() {
-  const activePool = pool.filter(p => p.is_active !== false);
-  document.getElementById('statPeople').textContent = activePool.length;
-  document.getElementById('statOrgs').textContent = orgs.length;
-}
-
-// === TOAST ===
 let _toastTimer;
 function showToast(msg) {
   clearTimeout(_toastTimer);
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// === ENTER KEY ===
-document.getElementById('newPersonName').addEventListener('keydown', e => { if (e.key === 'Enter') addPerson(); });
 document.getElementById('newOrgName').addEventListener('keydown', e => { if (e.key === 'Enter') addOrg(); });
 
-// === START ===
 init();
 </script>
 </body>

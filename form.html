@@ -12,6 +12,7 @@
 --gray-50:#F8F9FA;--gray-100:#F1F3F5;--gray-200:#E9ECEF;--gray-300:#DEE2E6;--gray-400:#ADB5BD;--gray-500:#868E96;--gray-600:#495057;--gray-700:#343A40;--gray-800:#212529;
 --green-50:#EAF3DE;--green-400:#639922;
 --red-50:#FCEBEB;--red-400:#E24B4A;
+--yellow-50:#FFF8E1;--yellow-700:#92400e;
 --radius:12px;--radius-sm:8px;
 }
 body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;direction:rtl}
@@ -22,19 +23,23 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .logo{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--blue-400),var(--teal-400));display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
 .logo svg{width:32px;height:32px;fill:#fff}
 .header h1{font-size:22px;font-weight:600;color:var(--blue-900);margin-bottom:4px}
-.campaign-badge{padding:6px 16px;border-radius:20px;border:1.5px solid var(--teal-200);font-size:14px;font-weight:500;color:var(--teal-800);background:var(--teal-50);display:inline-block;margin-top:4px}
+.campaign-name{font-size:20px;font-weight:700;color:var(--teal-800);margin-top:8px;line-height:1.4}
+.campaign-status-badge{padding:4px 14px;border-radius:16px;font-size:13px;font-weight:500;display:inline-block;margin-top:6px}
 
 .screen{display:none;animation:fadeIn .3s ease}
 .screen.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-/* Login */
+/* Cards & Fields */
 .login-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:24px 20px}
 .login-title{font-size:17px;font-weight:600;color:var(--blue-800);margin-bottom:16px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;font-weight:500;color:var(--gray-500);margin-bottom:5px}
 .field select,.field input{width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;background:#fff;color:var(--gray-800);transition:border-color .2s}
 .field select:focus,.field input:focus{outline:none;border-color:var(--blue-400);box-shadow:0 0 0 3px rgba(55,138,221,.12)}
+.field-error input,.field-error select{border-color:var(--red-400)!important}
+.field-hint{font-size:11px;margin-top:3px;color:var(--gray-400)}
+.field-hint.error{color:var(--red-400)}
 
 /* Buttons */
 .btn{padding:12px 24px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
@@ -43,11 +48,30 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .btn-primary:disabled{background:var(--gray-300);color:var(--gray-400);cursor:not-allowed}
 .btn-secondary{background:transparent;color:var(--blue-600);border:1.5px solid var(--blue-200)}
 .btn-secondary:hover{background:var(--blue-50)}
+.btn-outline{background:transparent;color:var(--teal-600);border:1.5px solid var(--teal-200)}
+.btn-outline:hover{background:var(--teal-50)}
 .btn-danger{background:transparent;color:var(--red-400);border:1.5px solid var(--gray-200)}
 .btn-danger:hover{background:var(--red-50);border-color:var(--red-400)}
 .btn-full{width:100%}
 .btn-row{display:flex;gap:8px;margin-top:20px}
 .btn-row .btn{flex:1}
+
+/* Landing buttons */
+.landing-buttons{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.landing-buttons .btn{padding:16px;font-size:16px}
+
+/* Profile cards for duplicate names */
+.profile-cards{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.profile-card{border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:12px 14px;cursor:pointer;transition:all .2s;background:#fff}
+.profile-card:hover,.profile-card.selected{border-color:var(--blue-400);background:var(--blue-50)}
+.profile-card .pc-name{font-weight:600;color:var(--blue-800);font-size:14px}
+.profile-card .pc-details{font-size:12px;color:var(--gray-500);margin-top:3px}
+
+/* Profile confirmation */
+.profile-confirm{background:var(--gray-50);border-radius:var(--radius-sm);padding:12px 14px;margin:12px 0}
+.profile-confirm .pc-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-600);margin-bottom:4px}
+.profile-confirm .pc-row:last-child{margin-bottom:0}
+.profile-confirm .pc-label{font-weight:500;color:var(--gray-500);min-width:50px}
 
 /* User bar */
 .user-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:12px 16px;background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200)}
@@ -57,11 +81,18 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .user-bar .btn-logout{margin-right:auto;font-size:12px;color:var(--gray-400);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:4px}
 .user-bar .btn-logout:hover{background:var(--gray-100);color:var(--gray-600)}
 
+/* Status banner */
+.status-banner{text-align:center;padding:10px;font-size:14px;font-weight:600;border-radius:var(--radius-sm);margin-bottom:12px}
+.status-banner.paused{background:var(--yellow-50);color:var(--yellow-700)}
+.status-banner.ended{background:#f5f5f5;color:#888}
+.status-banner.suspended{background:var(--yellow-50);color:var(--yellow-700)}
+
 /* Personal area */
 .area-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .area-title{font-size:17px;font-weight:600;color:var(--blue-800)}
 .add-btn{display:flex;align-items:center;gap:5px;padding:8px 16px;border-radius:var(--radius-sm);border:none;background:var(--blue-400);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
 .add-btn:hover{background:var(--blue-600)}
+.add-btn:disabled{background:var(--gray-300);color:var(--gray-400);cursor:not-allowed;opacity:.5}
 
 .content-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:16px;margin-bottom:12px;transition:border-color .15s}
 .content-card:hover{border-color:var(--blue-200)}
@@ -131,25 +162,17 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .confirm-box h3{font-size:16px;color:var(--gray-800);margin-bottom:8px}
 .confirm-box p{font-size:13px;color:var(--gray-500);margin-bottom:20px}
 
-/* Success */
-.success-screen{text-align:center;padding:40px 20px}
-.success-icon{width:80px;height:80px;border-radius:50%;background:var(--teal-50);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;animation:popIn .4s ease}
-.success-icon svg{width:40px;height:40px;stroke:var(--teal-400);fill:none;stroke-width:2.5}
-@keyframes popIn{0%{transform:scale(0)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
-.success-screen h2{font-size:20px;color:var(--teal-800);margin-bottom:8px}
-.success-screen p{font-size:14px;color:var(--gray-500);margin-bottom:20px;line-height:1.6}
-
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gray-800);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:all .4s;z-index:100;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-.skip-link{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--gray-400);text-decoration:none;transition:color .2s}
+.skip-link{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--gray-400);text-decoration:none;transition:color .2s;cursor:pointer}
 .skip-link:hover{color:var(--blue-600)}
 
-/* Mobile enhancements */
+/* Mobile */
 @media(max-width:420px){
   .container{padding:16px 10px 40px}
   .header h1{font-size:19px}
-  .campaign-badge{font-size:12px;padding:5px 12px}
+  .campaign-name{font-size:17px}
   .btn{padding:10px 18px;font-size:14px}
   .cc-metrics{grid-template-columns:repeat(2,1fr)}
   .content-card{padding:12px}
@@ -168,31 +191,68 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
   <div class="header">
     <div class="logo" style="background:none"><img src="logo.jpg" alt="קווים אדומים" style="width:64px;height:64px;object-fit:contain" onerror="this.parentNode.style.background='linear-gradient(135deg,var(--blue-400),var(--teal-400))'"></div>
     <h1>קווים אדומים</h1>
-    <div class="campaign-badge" id="campaignName">מניעת אלימות בזוגיות צעירה</div>
+    <div class="campaign-name" id="campaignName">טוען...</div>
+    <div id="campaignStatusBadge"></div>
   </div>
 
-  <!-- Screen 1: Login -->
-  <div class="screen active" id="screenLogin">
+  <!-- Screen: Landing -->
+  <div class="screen active" id="screenLanding">
     <div class="login-card">
-      <div class="login-title">כניסה למערכת</div>
-      <div class="field">
-        <label>שם מלא</label>
-        <select id="loginName" onchange="onNameChange()" aria-label="בחירת שם">
-          <option value="">בחירת שם...</option>
-        </select>
+      <div class="login-title" style="text-align:center">הצטרפות לקמפיין</div>
+      <p style="text-align:center;font-size:14px;color:var(--gray-500);margin-bottom:8px">דווחו על תכנים שפרסמתם ועקבו אחרי ההשפעה שלכם</p>
+      <div class="landing-buttons">
+        <button class="btn btn-primary btn-full" onclick="showScreen('screenRegister'); loadOrgs()">הרשמה לקמפיין</button>
+        <button class="btn btn-outline btn-full" onclick="showReturningScreen()">כבר נרשמתי</button>
       </div>
-      <div class="field">
-        <label>ארגון</label>
-        <select id="loginOrg" onchange="checkLoginReady()" aria-label="בחירת ארגון">
-          <option value="">בחירת ארגון...</option>
-        </select>
-      </div>
-      <button class="btn btn-primary btn-full" id="btnLogin" disabled onclick="doLogin()">כניסה</button>
       <a class="skip-link" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד ←</a>
     </div>
   </div>
 
-  <!-- Screen 2: Personal area -->
+  <!-- Screen: Register -->
+  <div class="screen" id="screenRegister">
+    <div class="login-card">
+      <div class="login-title">הרשמה לקמפיין</div>
+      <div class="field">
+        <label>שם מלא</label>
+        <input type="text" id="regName" placeholder="השם המלא שלך" oninput="validateRegForm()">
+      </div>
+      <div class="field">
+        <label>דוא"ל</label>
+        <input type="email" id="regEmail" placeholder="example@mail.com" dir="ltr" style="text-align:left" oninput="validateRegForm()">
+        <div class="field-hint" id="regEmailHint"></div>
+      </div>
+      <div class="field">
+        <label>ארגון</label>
+        <select id="regOrg" onchange="onRegOrgChange(); validateRegForm()">
+          <option value="">בחירת ארגון...</option>
+        </select>
+      </div>
+      <div class="field" id="regCustomOrgField" style="display:none">
+        <label>שם הארגון שלך</label>
+        <input type="text" id="regCustomOrg" placeholder="הזינו את שם הארגון" oninput="validateRegForm()">
+      </div>
+      <button class="btn btn-primary btn-full" id="btnRegister" disabled onclick="doRegister()">הרשמה וכניסה</button>
+      <a class="skip-link" onclick="showReturningScreen()">כבר נרשמתי? כניסה</a>
+    </div>
+  </div>
+
+  <!-- Screen: Returning login -->
+  <div class="screen" id="screenReturning">
+    <div class="login-card">
+      <div class="login-title">כניסה</div>
+      <div class="field">
+        <label>שם מלא</label>
+        <select id="loginName" onchange="onReturningNameChange()">
+          <option value="">בחירת שם...</option>
+        </select>
+      </div>
+      <div id="profileConfirmArea" style="display:none"></div>
+      <button class="btn btn-primary btn-full" id="btnLogin" disabled onclick="doReturningLogin()">כניסה</button>
+      <a class="skip-link" onclick="showScreen('screenRegister'); loadOrgs()">משתמש חדש? הרשמה</a>
+    </div>
+  </div>
+
+  <!-- Screen: Personal area -->
   <div class="screen" id="screenPersonal">
     <div class="user-bar" id="userBar">
       <div class="user-avatar" id="userAvatar">—</div>
@@ -202,15 +262,16 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
       </div>
       <button class="btn-logout" onclick="doLogout()">החלף משתמש</button>
     </div>
+    <div id="personalStatusBanner"></div>
     <div class="area-header">
       <div class="area-title">התכנים שלי</div>
       <button class="add-btn" id="btnAddContent" onclick="showUploadScreen()">+ הוסף תוכן</button>
     </div>
     <div id="contentList"></div>
-    <a class="skip-link" style="margin-top:24px;cursor:pointer" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד ←</a>
+    <a class="skip-link" style="margin-top:24px" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד ←</a>
   </div>
 
-  <!-- Screen 3: Upload new content -->
+  <!-- Screen: Upload new content -->
   <div class="screen" id="screenUpload">
     <div class="user-bar">
       <div class="user-avatar" id="uploadAvatar">—</div>
@@ -259,7 +320,7 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
     </div>
   </div>
 
-  <!-- Screen 4: Update metrics -->
+  <!-- Screen: Update metrics -->
   <div class="screen" id="screenUpdate">
     <div class="user-bar">
       <div class="user-avatar" id="updateAvatar">—</div>
@@ -283,17 +344,6 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
     </div>
   </div>
 
-  <!-- Screen 5: Success -->
-  <div class="screen" id="screenSuccess">
-    <div class="success-screen">
-      <div class="success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <h2 id="successTitle">הנתונים נשמרו בהצלחה!</h2>
-      <p id="successMsg">התכנים שלך עודכנו.</p>
-      <button class="btn btn-primary btn-full" onclick="showScreen('screenPersonal')">מעבר לאזור האישי</button>
-      <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד</button>
-    </div>
-  </div>
-
 </div>
 
 <!-- Confirm dialog -->
@@ -313,107 +363,112 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-// =================== DATA (from config.js + Supabase) ===================
+// =================== DATA ===================
 const PLATFORMS = CONFIG.PLATFORMS;
-
-// Loaded from Supabase
 let CAMPAIGN = { name: '', status: 'active' };
-let POOL = []; // [{name, org, profile_id}]
+let cachedOrgs = null; // [{id, name}]
+let allProfileNames = []; // for returning dropdown
+let returningProfiles = []; // matches for selected name
 
 // Current state
-let currentUser = null; // {profileId, name, org}
+let currentUser = null; // {profileId, name, org, email, participantStatus}
 let editingContentId = null;
 let deletingContentId = null;
 let uploadSelectedPlatforms = [];
 let uploadPlatformData = {};
 let currentPlatformIdx = 0;
+let selectedReturningProfile = null;
 
-// =================== INIT ===================
-function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
-
-// Resolve campaign ID from URL param or CONFIG default
+// Campaign ID from URL or config
 function getActiveCampaignId() {
   const params = new URLSearchParams(window.location.search);
   return params.get('campaign') || CONFIG.CAMPAIGN_ID;
 }
 const activeCampaignId = getActiveCampaignId();
 
+// =================== HELPERS ===================
+function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
+function today() { return new Date().toISOString().slice(0,10); }
+function getInitials(name) { const p = name.split(' '); return p.length > 1 ? p[0][0] + p[1][0] : p[0].substring(0,2); }
+function formatDate(d) { if (!d) return ''; const p = d.split('-'); return `${p[2]}.${p[1]}.${p[0]}`; }
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
+function isValidUrl(s) { return /^https?:\/\/.+/i.test(s.trim()); }
+function sanitizeLink(link) { if (!link) return ''; const t = link.trim(); if (/^https?:\/\//i.test(t)) return t; if (/^[a-z]+:/i.test(t)) return ''; return t; }
+function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+function displayOrg(orgName, customOrgName) {
+  if (orgName === 'אחר' && customOrgName) return `אחר — ${customOrgName}`;
+  return orgName;
+}
+
+// =================== INIT ===================
 async function init() {
   try {
-  const db = CONFIG.db();
-  if (!db) { hideLoading(); showToast('שגיאה בחיבור למסד הנתונים'); return; }
+    const db = CONFIG.db();
+    if (!db) { hideLoading(); showToast('שגיאה בחיבור למסד הנתונים'); return; }
 
-  // If campaign changed from session, clear session so user must re-login
-  const prevSession = CONFIG.getSession();
-  if (prevSession && (!prevSession.campaignId || prevSession.campaignId !== activeCampaignId)) {
-    CONFIG.clearSession();
-  }
-
-  // Load campaign info
-  const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
-  if (campData) {
-    CAMPAIGN = campData;
-  }
-
-  // Note: campaign only ends when admin manually sets status to 'ended'
-  // end_date is informational — admin gets a warning in the dashboard
-
-  const badge = document.getElementById('campaignName');
-  badge.textContent = CAMPAIGN.name;
-  if (CAMPAIGN.status === 'ended') {
-    const endStr = CAMPAIGN.end_date ? formatDate(CAMPAIGN.end_date) : '';
-    badge.textContent += endStr ? ` (הסתיים ב-${endStr})` : ' (הסתיים)';
-    badge.style.borderColor = '#ccc';
-    badge.style.color = '#888';
-    badge.style.background = '#f5f5f5';
-  } else if (CAMPAIGN.status === 'paused') {
-    badge.textContent += ' (מושהה)';
-    badge.style.borderColor = '#f59e0b';
-    badge.style.color = '#92400e';
-    badge.style.background = '#fff8e1';
-  }
-  document.getElementById('uploadDate').value = today();
-
-  // Load pool from Supabase
-  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
-  if (poolData) {
-    POOL = poolData.map(p => ({ name: p.name, org: p.org_name, profileId: p.profile_id }));
-  }
-
-  // Populate login dropdown — names only, org auto-fills
-  const nameSelect = document.getElementById('loginName');
-  const uniqueNames = [...new Set(POOL.map(p => p.name))];
-  uniqueNames.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; nameSelect.appendChild(o); });
-
-  // Build upload platform grid (multi-select)
-  const grid = document.getElementById('uploadPlatformGrid');
-  PLATFORMS.forEach(p => {
-    const d = document.createElement('div');
-    d.className = 'platform-card'; d.dataset.id = p.id;
-    d.setAttribute('role', 'checkbox'); d.setAttribute('aria-checked', 'false'); d.setAttribute('aria-label', p.name); d.tabIndex = 0;
-    d.innerHTML = `<div class="check"></div><span class="icon">${p.icon}</span><span class="name">${p.name}</span>`;
-    d.onclick = () => toggleUploadPlatform(p.id);
-    d.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUploadPlatform(p.id); } };
-    grid.appendChild(d);
-  });
-
-  // Check if already logged in (localStorage session)
-  const session = CONFIG.getSession();
-  if (session && session.profileId) {
-    // Verify session is still valid (profile exists in pool)
-    const poolMatch = POOL.find(p => p.profileId === session.profileId);
-    if (poolMatch) {
-      currentUser = { profileId: session.profileId, name: session.name, org: session.orgName };
-      const initials = getInitials(currentUser.name);
-      ['userAvatar','uploadAvatar','updateAvatar'].forEach(id => document.getElementById(id).textContent = initials);
-      ['userName','uploadUserName','updateUserName'].forEach(id => document.getElementById(id).textContent = currentUser.name);
-      ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => document.getElementById(id).textContent = currentUser.org);
-      showScreen('screenPersonal');
-      hideLoading();
-      return;
+    // Clear session if campaign changed
+    const prevSession = CONFIG.getSession();
+    if (prevSession && (!prevSession.campaignId || prevSession.campaignId !== activeCampaignId)) {
+      CONFIG.clearSession();
     }
-  }
-  hideLoading();
+
+    // Load campaign info
+    const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
+    if (campData) CAMPAIGN = campData;
+
+    // Update header
+    document.getElementById('campaignName').textContent = CAMPAIGN.name;
+    const statusBadge = document.getElementById('campaignStatusBadge');
+    if (CAMPAIGN.status === 'ended') {
+      const endStr = CAMPAIGN.end_date ? formatDate(CAMPAIGN.end_date) : '';
+      statusBadge.innerHTML = `<span class="campaign-status-badge" style="border:1px solid #ccc;color:#888;background:#f5f5f5">${endStr ? `הסתיים ב-${endStr}` : 'הסתיים'}</span>`;
+    } else if (CAMPAIGN.status === 'paused') {
+      statusBadge.innerHTML = '<span class="campaign-status-badge" style="border:1px solid #f59e0b;color:#92400e;background:#fff8e1">מושהה</span>';
+    }
+
+    document.getElementById('uploadDate').value = today();
+
+    // Build upload platform grid
+    const grid = document.getElementById('uploadPlatformGrid');
+    PLATFORMS.forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'platform-card'; d.dataset.id = p.id;
+      d.setAttribute('role', 'checkbox'); d.setAttribute('aria-checked', 'false'); d.setAttribute('aria-label', p.name); d.tabIndex = 0;
+      d.innerHTML = `<div class="check"></div><span class="icon">${p.icon}</span><span class="name">${p.name}</span>`;
+      d.onclick = () => toggleUploadPlatform(p.id);
+      d.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUploadPlatform(p.id); } };
+      grid.appendChild(d);
+    });
+
+    // Check existing session
+    const session = CONFIG.getSession();
+    if (session && session.profileId) {
+      // Verify participant status
+      const { data: cpData } = await db.from('campaign_participants')
+        .select('status')
+        .eq('campaign_id', activeCampaignId)
+        .eq('profile_id', session.profileId)
+        .single();
+
+      if (cpData) {
+        currentUser = {
+          profileId: session.profileId,
+          name: session.name,
+          org: session.orgName,
+          email: session.email || '',
+          participantStatus: cpData.status
+        };
+        setUserBars(currentUser);
+        showScreen('screenPersonal');
+        hideLoading();
+        return;
+      }
+      // If not in campaign anymore, clear session
+      CONFIG.clearSession();
+    }
+
+    hideLoading();
   } catch (err) {
     console.error('Init error:', err);
     hideLoading();
@@ -421,25 +476,12 @@ async function init() {
   }
 }
 
-function today() { return new Date().toISOString().slice(0,10); }
-
-function sanitizeLink(link) {
-  if (!link) return '';
-  const trimmed = link.trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (/^[a-z]+:/i.test(trimmed)) return ''; // block javascript:, data:, etc.
-  return trimmed; // allow relative URLs
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function getInitials(name) {
-  const parts = name.split(' ');
-  return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0,2);
+function setUserBars(user) {
+  const initials = getInitials(user.name);
+  const orgDisplay = user.org;
+  ['userAvatar','uploadAvatar','updateAvatar'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = initials; });
+  ['userName','uploadUserName','updateUserName'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = user.name; });
+  ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = orgDisplay; });
 }
 
 // =================== NAVIGATION ===================
@@ -450,70 +492,259 @@ function showScreen(id) {
   if (id === 'screenPersonal') renderPersonalArea();
 }
 
-// =================== LOGIN ===================
-function onNameChange() {
-  const name = document.getElementById('loginName').value;
-  const orgSelect = document.getElementById('loginOrg');
+// =================== REGISTRATION ===================
+async function loadOrgs() {
+  if (cachedOrgs) { populateOrgDropdown(); return; }
+  const db = CONFIG.db();
+  const { data } = await db.from('organizations').select('id, name').order('name');
+  if (data) {
+    cachedOrgs = data;
+    populateOrgDropdown();
+  }
+}
 
-  // Find orgs for this person from pool
-  const orgsForName = POOL.filter(p => p.name === name).map(p => p.org);
-
-  // Clear and repopulate org dropdown
-  orgSelect.innerHTML = '<option value="">בחירת ארגון...</option>';
-  orgsForName.forEach(o => {
+function populateOrgDropdown() {
+  const sel = document.getElementById('regOrg');
+  sel.innerHTML = '<option value="">בחירת ארגון...</option>';
+  cachedOrgs.forEach(o => {
     const opt = document.createElement('option');
-    opt.value = o; opt.textContent = o;
-    orgSelect.appendChild(opt);
+    opt.value = o.id; opt.textContent = o.name; opt.dataset.name = o.name;
+    sel.appendChild(opt);
   });
+}
 
-  // Auto-select if only one org
-  if (orgsForName.length === 1) {
-    orgSelect.value = orgsForName[0];
-    orgSelect.disabled = true;
+function onRegOrgChange() {
+  const sel = document.getElementById('regOrg');
+  const selectedOpt = sel.options[sel.selectedIndex];
+  const isOther = selectedOpt && selectedOpt.dataset.name === 'אחר';
+  document.getElementById('regCustomOrgField').style.display = isOther ? 'block' : 'none';
+  if (!isOther) document.getElementById('regCustomOrg').value = '';
+}
+
+function validateRegForm() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const orgId = document.getElementById('regOrg').value;
+  const hint = document.getElementById('regEmailHint');
+
+  // Email hint
+  if (email && !isValidEmail(email)) {
+    hint.textContent = 'כתובת מייל לא תקינה';
+    hint.className = 'field-hint error';
   } else {
-    orgSelect.disabled = false;
+    hint.textContent = '';
+    hint.className = 'field-hint';
   }
 
-  checkLoginReady();
+  // Check "other" org needs custom name
+  const selOpt = document.getElementById('regOrg').options[document.getElementById('regOrg').selectedIndex];
+  const isOther = selOpt && selOpt.dataset.name === 'אחר';
+  const customOrg = document.getElementById('regCustomOrg').value.trim();
+
+  const valid = name && email && isValidEmail(email) && orgId && (!isOther || customOrg);
+  document.getElementById('btnRegister').disabled = !valid;
 }
 
-function checkLoginReady() {
-  const name = document.getElementById('loginName').value;
-  const org = document.getElementById('loginOrg').value;
-  document.getElementById('btnLogin').disabled = !name || !org;
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const orgId = document.getElementById('regOrg').value;
+  const selOpt = document.getElementById('regOrg').options[document.getElementById('regOrg').selectedIndex];
+  const orgName = selOpt ? selOpt.dataset.name : '';
+  const isOther = orgName === 'אחר';
+  const customOrgName = isOther ? document.getElementById('regCustomOrg').value.trim() : null;
+
+  if (!name || !email || !orgId) return;
+
+  const btn = document.getElementById('btnRegister');
+  btn.disabled = true;
+  btn.textContent = 'נרשם...';
+
+  try {
+    const db = CONFIG.db();
+    const { data, error } = await db.rpc('register_profile', {
+      p_name: name,
+      p_email: email,
+      p_org_id: orgId,
+      p_custom_org_name: customOrgName,
+      p_campaign_id: activeCampaignId
+    });
+
+    if (error) {
+      console.error('Register error:', error);
+      if (error.message && error.message.includes('profiles_email_key')) {
+        // Email exists — this shouldn't happen since register_profile handles it, but just in case
+        showToast('מייל זה כבר רשום — נסו כניסה');
+      } else {
+        showToast('שגיאה בהרשמה — נסו שוב');
+      }
+      btn.disabled = false;
+      btn.textContent = 'הרשמה וכניסה';
+      return;
+    }
+
+    const profileId = data.profile_id;
+    const actualName = data.name;
+    const displayOrgName = displayOrg(orgName, customOrgName);
+
+    // Check participant status (should be 'active' for new registration)
+    const { data: cpData } = await db.from('campaign_participants')
+      .select('status')
+      .eq('campaign_id', activeCampaignId)
+      .eq('profile_id', profileId)
+      .single();
+
+    const status = cpData?.status || 'active';
+
+    currentUser = { profileId, name: actualName, org: displayOrgName, email, participantStatus: status };
+    CONFIG.setSession(profileId, actualName, displayOrgName, 'member', activeCampaignId, email);
+    setUserBars(currentUser);
+
+    if (data.is_existing) {
+      showToast('נמצא חשבון קיים — נכנסת בהצלחה');
+    } else {
+      showToast('נרשמת בהצלחה!');
+    }
+
+    showScreen('screenPersonal');
+  } catch (err) {
+    console.error('Register error:', err);
+    showToast('שגיאה בהרשמה — נסו שוב');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'הרשמה וכניסה';
 }
 
-async function doLogin() {
+// =================== RETURNING LOGIN ===================
+async function showReturningScreen() {
+  showScreen('screenReturning');
+  document.getElementById('profileConfirmArea').style.display = 'none';
+  document.getElementById('btnLogin').disabled = true;
+  selectedReturningProfile = null;
+
+  // Load all profile names
+  const db = CONFIG.db();
+  const { data } = await db.rpc('get_all_profiles_for_login');
+  if (!data || data.length === 0) {
+    showToast('לא נמצאו משתמשים רשומים');
+    return;
+  }
+
+  allProfileNames = data;
+  const nameSelect = document.getElementById('loginName');
+  nameSelect.innerHTML = '<option value="">בחירת שם...</option>';
+
+  // Unique names
+  const uniqueNames = [...new Set(data.map(p => p.name))].sort();
+  uniqueNames.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n;
+    nameSelect.appendChild(o);
+  });
+}
+
+function onReturningNameChange() {
   const name = document.getElementById('loginName').value;
-  const org = document.getElementById('loginOrg').value;
-  if (!name || !org) return;
+  const area = document.getElementById('profileConfirmArea');
+  selectedReturningProfile = null;
+  document.getElementById('btnLogin').disabled = true;
+
+  if (!name) { area.style.display = 'none'; return; }
+
+  // Find all profiles with this name
+  returningProfiles = allProfileNames.filter(p => p.name === name);
+
+  if (returningProfiles.length === 0) {
+    area.innerHTML = '<div class="field-hint error" style="margin:12px 0">שם לא נמצא</div>';
+    area.style.display = 'block';
+    return;
+  }
+
+  if (returningProfiles.length === 1) {
+    // Single match — show confirmation
+    const p = returningProfiles[0];
+    const orgDisplay = displayOrg(p.org_name, p.custom_org_name);
+    area.innerHTML = `<div class="profile-confirm">
+      <div class="pc-row"><span class="pc-label">מייל:</span> ${escapeHtml(p.email || 'לא הוזן')}</div>
+      <div class="pc-row"><span class="pc-label">ארגון:</span> ${escapeHtml(orgDisplay)}</div>
+    </div>`;
+    area.style.display = 'block';
+    selectedReturningProfile = p;
+    document.getElementById('btnLogin').disabled = false;
+  } else {
+    // Multiple matches — show cards
+    let html = '<div style="font-size:13px;color:var(--gray-500);margin-bottom:8px">נמצאו מספר משתמשים עם שם זה — בחרו:</div><div class="profile-cards">';
+    returningProfiles.forEach((p, i) => {
+      const orgDisplay = displayOrg(p.org_name, p.custom_org_name);
+      html += `<div class="profile-card" onclick="selectReturningProfile(${i})" id="rpc_${i}">
+        <div class="pc-name">${escapeHtml(p.name)}</div>
+        <div class="pc-details">${escapeHtml(p.email || 'לא הוזן מייל')} · ${escapeHtml(orgDisplay)}</div>
+      </div>`;
+    });
+    html += '</div>';
+    area.innerHTML = html;
+    area.style.display = 'block';
+  }
+}
+
+function selectReturningProfile(idx) {
+  selectedReturningProfile = returningProfiles[idx];
+  document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('rpc_' + idx).classList.add('selected');
+  document.getElementById('btnLogin').disabled = false;
+}
+
+async function doReturningLogin() {
+  if (!selectedReturningProfile) return;
 
   const btn = document.getElementById('btnLogin');
   btn.disabled = true;
   btn.textContent = 'מתחבר...';
 
-  // Find profile in pool (already loaded)
-  const poolMatch = POOL.find(p => p.name === name && p.org === org);
-  if (!poolMatch) {
-    showToast('לא נמצא במאגר — פנה למנהל');
-    btn.disabled = false;
-    btn.textContent = 'כניסה';
-    return;
+  try {
+    const db = CONFIG.db();
+    const profileId = selectedReturningProfile.profile_id;
+    const orgDisplay = displayOrg(selectedReturningProfile.org_name, selectedReturningProfile.custom_org_name);
+
+    // Add to campaign if not already (ON CONFLICT DO NOTHING — preserves suspended status)
+    await db.from('campaign_participants')
+      .upsert(
+        { campaign_id: activeCampaignId, profile_id: profileId, status: 'active' },
+        { onConflict: 'campaign_id,profile_id', ignoreDuplicates: true }
+      );
+
+    // Get current status
+    const { data: cpData } = await db.from('campaign_participants')
+      .select('status')
+      .eq('campaign_id', activeCampaignId)
+      .eq('profile_id', profileId)
+      .single();
+
+    const status = cpData?.status || 'active';
+
+    currentUser = {
+      profileId,
+      name: selectedReturningProfile.name,
+      org: orgDisplay,
+      email: selectedReturningProfile.email || '',
+      participantStatus: status
+    };
+
+    CONFIG.setSession(profileId, currentUser.name, orgDisplay, 'member', activeCampaignId, currentUser.email);
+    setUserBars(currentUser);
+    showScreen('screenPersonal');
+    showToast('ברוכים השבים!');
+  } catch (err) {
+    console.error('Login error:', err);
+    showToast('שגיאה בכניסה — נסו שוב');
   }
 
-  currentUser = { profileId: poolMatch.profileId, name, org };
-  CONFIG.setSession(poolMatch.profileId, name, org, 'member', activeCampaignId);
-
-  // Update user bars across screens
-  const initials = getInitials(name);
-  ['userAvatar','uploadAvatar','updateAvatar'].forEach(id => document.getElementById(id).textContent = initials);
-  ['userName','uploadUserName','updateUserName'].forEach(id => document.getElementById(id).textContent = name);
-  ['userOrg','uploadUserOrg','updateUserOrg'].forEach(id => document.getElementById(id).textContent = org);
-
+  btn.disabled = false;
   btn.textContent = 'כניסה';
-  showScreen('screenPersonal');
 }
 
+// =================== LOGOUT ===================
 function doLogout() {
   currentUser = null;
   editingContentId = null;
@@ -521,13 +752,9 @@ function doLogout() {
   uploadSelectedPlatforms = [];
   uploadPlatformData = {};
   currentPlatformIdx = 0;
+  selectedReturningProfile = null;
   CONFIG.clearSession();
-  document.getElementById('loginName').value = '';
-  const orgSelect = document.getElementById('loginOrg');
-  orgSelect.innerHTML = '<option value="">בחירת ארגון...</option>';
-  orgSelect.disabled = false;
-  document.getElementById('btnLogin').disabled = true;
-  showScreen('screenLogin');
+  showScreen('screenLanding');
 }
 
 // =================== PERSONAL AREA ===================
@@ -535,27 +762,32 @@ async function renderPersonalArea() {
   const list = document.getElementById('contentList');
   if (!currentUser) return;
 
-  // Show campaign status banner if not active
-  let statusBanner = document.getElementById('campaignStatusBanner');
-  if (!statusBanner) {
-    statusBanner = document.createElement('div');
-    statusBanner.id = 'campaignStatusBanner';
-    statusBanner.style.cssText = 'text-align:center;padding:10px;font-size:14px;font-weight:600;border-radius:var(--radius-sm);margin-bottom:12px;display:none';
-    list.parentNode.insertBefore(statusBanner, list);
-  }
+  // Status banners
+  const banner = document.getElementById('personalStatusBanner');
   const addBtn = document.getElementById('btnAddContent');
-  if (CAMPAIGN.status === 'paused') {
-    statusBanner.textContent = 'הקמפיין מושהה — לא ניתן להעלות תוכן חדש כרגע';
-    statusBanner.style.background = '#fff8e1'; statusBanner.style.color = '#92400e'; statusBanner.style.display = 'block';
-    if (addBtn) { addBtn.disabled = true; addBtn.style.opacity = '0.5'; addBtn.style.cursor = 'not-allowed'; }
+  const isSuspended = currentUser.participantStatus === 'suspended';
+  const isCampaignInactive = CAMPAIGN.status !== 'active';
+
+  banner.innerHTML = '';
+  banner.style.display = 'none';
+
+  if (isSuspended) {
+    banner.innerHTML = '<div class="status-banner suspended">ההשתתפות שלך בקמפיין הושהתה — לפרטים פנה/י למנהלת</div>';
+    banner.style.display = 'block';
+    addBtn.disabled = true;
+  } else if (CAMPAIGN.status === 'paused') {
+    banner.innerHTML = '<div class="status-banner paused">הקמפיין מושהה — לא ניתן להעלות תוכן חדש כרגע</div>';
+    banner.style.display = 'block';
+    addBtn.disabled = true;
   } else if (CAMPAIGN.status === 'ended') {
-    statusBanner.textContent = 'הקמפיין הסתיים — לא ניתן להעלות תוכן חדש';
-    statusBanner.style.background = '#f5f5f5'; statusBanner.style.color = '#888'; statusBanner.style.display = 'block';
-    if (addBtn) { addBtn.disabled = true; addBtn.style.opacity = '0.5'; addBtn.style.cursor = 'not-allowed'; }
+    banner.innerHTML = '<div class="status-banner ended">הקמפיין הסתיים — לא ניתן להעלות תוכן חדש</div>';
+    banner.style.display = 'block';
+    addBtn.disabled = true;
   } else {
-    statusBanner.style.display = 'none';
-    if (addBtn) { addBtn.disabled = false; addBtn.style.opacity = '1'; addBtn.style.cursor = 'pointer'; }
+    addBtn.disabled = false;
   }
+
+  const disableActions = isSuspended || isCampaignInactive;
 
   list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400)">טוען...</div>';
 
@@ -568,7 +800,7 @@ async function renderPersonalArea() {
   if (error) { list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red-400)">שגיאה בטעינה</div>'; return; }
 
   if (!contents || contents.length === 0) {
-    const canAdd = CAMPAIGN.status === 'active';
+    const canAdd = !disableActions;
     list.innerHTML = `<div class="empty-state">
       <span class="empty-icon">📋</span>
       <h3>עדיין לא העלית תכנים</h3>
@@ -578,7 +810,6 @@ async function renderPersonalArea() {
     return;
   }
 
-  // Store for update/delete references
   window._userContents = contents;
 
   let html = '';
@@ -587,9 +818,9 @@ async function renderPersonalArea() {
     if (!plat) return;
     const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.content_type));
     const metrics = c.latest_metrics || {};
-
     const safeLink = sanitizeLink(c.link);
     const displayLink = escapeHtml(c.link || '');
+
     html += `<div class="content-card">
       <div class="cc-top">
         <span class="cc-icon">${plat.icon}</span>
@@ -605,23 +836,17 @@ async function renderPersonalArea() {
     });
     html += `</div>
       <div class="cc-actions">
-        <button class="btn btn-primary" onclick="showUpdateScreen('${c.entry_id}')">עדכן נתונים</button>
-        <button class="btn btn-danger" onclick="showDeleteConfirm('${c.entry_id}')">מחק</button>
+        <button class="btn btn-primary" onclick="showUpdateScreen('${c.entry_id}')" ${disableActions ? 'disabled' : ''}>עדכן נתונים</button>
+        <button class="btn btn-danger" onclick="showDeleteConfirm('${c.entry_id}')" ${disableActions ? 'disabled' : ''}>מחק</button>
       </div>
     </div>`;
   });
   list.innerHTML = html;
 }
 
-function formatDate(d) {
-  if (!d) return '';
-  const parts = d.split('-');
-  return `${parts[2]}.${parts[1]}.${parts[0]}`;
-}
-
 // =================== UPLOAD ===================
 function showUploadScreen() {
-  if (CAMPAIGN.status === 'ended' || CAMPAIGN.status === 'paused') return;
+  if (CAMPAIGN.status !== 'active' || currentUser?.participantStatus === 'suspended') return;
   uploadSelectedPlatforms = [];
   uploadPlatformData = {};
   currentPlatformIdx = 0;
@@ -634,11 +859,8 @@ function showUploadScreen() {
 
 function toggleUploadPlatform(platId) {
   const idx = uploadSelectedPlatforms.findIndex(p => p.id === platId);
-  if (idx >= 0) {
-    uploadSelectedPlatforms.splice(idx, 1);
-  } else {
-    uploadSelectedPlatforms.push(PLATFORMS.find(p => p.id === platId));
-  }
+  if (idx >= 0) uploadSelectedPlatforms.splice(idx, 1);
+  else uploadSelectedPlatforms.push(PLATFORMS.find(p => p.id === platId));
   document.querySelectorAll('#uploadPlatformGrid .platform-card').forEach(c => {
     const sel = uploadSelectedPlatforms.some(p => p.id === c.dataset.id);
     c.classList.toggle('selected', sel);
@@ -649,11 +871,8 @@ function toggleUploadPlatform(platId) {
 
 function startPlatformDetails() {
   if (uploadSelectedPlatforms.length === 0) return;
-  // Init data for each platform
   uploadSelectedPlatforms.forEach(p => {
-    if (!uploadPlatformData[p.id]) {
-      uploadPlatformData[p.id] = { type: p.types[0], link: '', date: today() };
-    }
+    if (!uploadPlatformData[p.id]) uploadPlatformData[p.id] = { type: p.types[0], link: '', date: today() };
   });
   currentPlatformIdx = 0;
   document.getElementById('uploadStep1').style.display = 'none';
@@ -666,14 +885,10 @@ function renderCurrentPlatformStep() {
   const data = uploadPlatformData[plat.id];
   const total = uploadSelectedPlatforms.length;
 
-  // Step indicator
   document.getElementById('uploadStepIndicator').textContent = total > 1 ? `פלטפורמה ${currentPlatformIdx + 1} מתוך ${total}` : '';
-
-  // Platform header
   document.getElementById('uploadPlatIcon').textContent = plat.icon;
   document.getElementById('uploadPlatName').textContent = plat.name;
 
-  // Type pills
   const pills = document.getElementById('uploadTypePills');
   pills.innerHTML = '';
   plat.types.forEach(t => {
@@ -689,20 +904,14 @@ function renderCurrentPlatformStep() {
     pills.appendChild(pill);
   });
 
-  // Link & date
   document.getElementById('uploadLink').value = data.link;
   document.getElementById('uploadDate').value = data.date;
 
-  // Navigation buttons
   const isLast = currentPlatformIdx === total - 1;
   document.getElementById('btnNextPlatform').textContent = isLast ? (total > 1 ? 'שמור הכל' : 'שמור') : 'הבא';
   document.getElementById('btnPrevPlatform').style.display = currentPlatformIdx > 0 ? '' : 'none';
 
   validateCurrentStep();
-}
-
-function isValidUrl(str) {
-  return /^https?:\/\/.+/i.test(str.trim());
 }
 
 function validateCurrentStep() {
@@ -729,7 +938,6 @@ function validateCurrentStep() {
   }
 }
 
-// Wire upload validation
 document.getElementById('uploadLink').addEventListener('input', function() {
   const plat = uploadSelectedPlatforms[currentPlatformIdx];
   if (plat) uploadPlatformData[plat.id].link = this.value;
@@ -752,8 +960,7 @@ function nextPlatformStep() {
   if (!link) { showToast('נא למלא קישור לתוכן'); return; }
   if (!isValidUrl(link)) { showToast('נא להזין קישור תקין (https://...)'); return; }
   savePlatformStepData();
-  const total = uploadSelectedPlatforms.length;
-  if (currentPlatformIdx < total - 1) {
+  if (currentPlatformIdx < uploadSelectedPlatforms.length - 1) {
     currentPlatformIdx++;
     renderCurrentPlatformStep();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -764,15 +971,11 @@ function nextPlatformStep() {
 
 function prevPlatformStep() {
   savePlatformStepData();
-  if (currentPlatformIdx > 0) {
-    currentPlatformIdx--;
-    renderCurrentPlatformStep();
-  }
+  if (currentPlatformIdx > 0) { currentPlatformIdx--; renderCurrentPlatformStep(); }
 }
 
 function backFromUpload() {
   if (document.getElementById('uploadStep2').style.display !== 'none' && uploadSelectedPlatforms.length > 0) {
-    // Go back to platform selection
     document.getElementById('uploadStep2').style.display = 'none';
     document.getElementById('uploadStep1').style.display = 'block';
   } else {
@@ -797,8 +1000,7 @@ async function saveAllUploads() {
     if (!data.link) continue;
 
     const metrics = {};
-    const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type));
-    filteredMetrics.forEach(m => { metrics[m.id] = 0; });
+    plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type)).forEach(m => { metrics[m.id] = 0; });
 
     const { error } = await db.rpc('add_content_entry', {
       p_profile_id: currentUser.profileId,
@@ -822,14 +1024,14 @@ async function saveAllUploads() {
     return;
   }
 
-  document.getElementById('successTitle').textContent = names.length > 1 ? `${names.length} תכנים נוספו בהצלחה!` : 'התוכן נוסף בהצלחה!';
-  document.getElementById('successMsg').textContent = names.join(' · ');
-  showScreen('screenSuccess');
-  showToast(names.length > 1 ? `${names.length} תכנים נוספו` : 'התוכן נוסף');
+  // Direct to personal area with toast (no success screen)
+  showToast(names.length > 1 ? `${names.length} תכנים נוספו בהצלחה` : 'התוכן נוסף בהצלחה');
+  showScreen('screenPersonal');
 }
 
 // =================== UPDATE ===================
 function showUpdateScreen(contentId) {
+  if (currentUser?.participantStatus === 'suspended') return;
   editingContentId = contentId;
   const contents = window._userContents || [];
   const c = contents.find(x => x.entry_id === contentId);
@@ -840,7 +1042,6 @@ function showUpdateScreen(contentId) {
 
   const metrics = c.latest_metrics || {};
 
-  // Header
   document.getElementById('updateHeader').innerHTML = `
     <span class="update-icon">${plat.icon}</span>
     <div class="update-info">
@@ -848,7 +1049,6 @@ function showUpdateScreen(contentId) {
       <p>הועלה: ${formatDate(c.upload_date)}</p>
     </div>`;
 
-  // Metrics fields
   const grid = document.getElementById('updateMetrics');
   const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(c.content_type));
   grid.innerHTML = '';
@@ -860,9 +1060,7 @@ function showUpdateScreen(contentId) {
     </div>`;
   });
 
-  // Date
   document.getElementById('updateDate').value = today();
-
   showScreen('screenUpdate');
 }
 
@@ -870,19 +1068,12 @@ async function saveUpdate() {
   if (!editingContentId || !currentUser) return;
 
   const metricInputs = document.querySelectorAll('#updateMetrics input[data-metric]');
-
-  // Validate all filled
   let allFilled = true;
-  metricInputs.forEach(inp => {
-    if (inp.value === '' || inp.value === null) allFilled = false;
-  });
+  metricInputs.forEach(inp => { if (inp.value === '' || inp.value === null) allFilled = false; });
   if (!allFilled) { showToast('נא למלא את כל השדות'); return; }
 
-  // Build metrics object
   const metrics = {};
-  metricInputs.forEach(inp => {
-    metrics[inp.dataset.metric] = parseInt(inp.value) || 0;
-  });
+  metricInputs.forEach(inp => { metrics[inp.dataset.metric] = parseInt(inp.value) || 0; });
 
   const btn = document.getElementById('btnSaveUpdate');
   btn.disabled = true;
@@ -905,14 +1096,14 @@ async function saveUpdate() {
     return;
   }
 
-  document.getElementById('successTitle').textContent = 'הנתונים עודכנו בהצלחה!';
-  document.getElementById('successMsg').textContent = 'הנתונים החדשים ישתקפו בדשבורד.';
-  showScreen('screenSuccess');
-  showToast('הנתונים עודכנו');
+  // Direct to personal area with toast (no success screen)
+  showToast('הנתונים עודכנו בהצלחה');
+  showScreen('screenPersonal');
 }
 
 // =================== DELETE ===================
 function showDeleteConfirm(contentId) {
+  if (currentUser?.participantStatus === 'suspended') return;
   deletingContentId = contentId;
   const contents = window._userContents || [];
   const c = contents.find(x => x.entry_id === contentId);
@@ -929,21 +1120,13 @@ function hideConfirm() {
 
 async function confirmDelete() {
   if (!deletingContentId || !currentUser) return;
-
   const db = CONFIG.db();
   const { error } = await db.rpc('delete_content_entry', {
     p_entry_id: deletingContentId,
     p_profile_id: currentUser.profileId
   });
-
   hideConfirm();
-
-  if (error) {
-    showToast('שגיאה במחיקה');
-    console.error('Delete error:', error);
-    return;
-  }
-
+  if (error) { showToast('שגיאה במחיקה'); console.error('Delete error:', error); return; }
   renderPersonalArea();
   showToast('התוכן נמחק');
 }

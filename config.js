@@ -28,8 +28,8 @@ const CONFIG = {
       return s ? JSON.parse(s) : null;
     } catch { return null; }
   },
-  setSession(profileId, name, orgName, role, campaignId) {
-    localStorage.setItem('sit_session', JSON.stringify({ profileId, name, orgName, role, campaignId }));
+  setSession(profileId, name, orgName, role, campaignId, email) {
+    localStorage.setItem('sit_session', JSON.stringify({ profileId, name, orgName, role, campaignId, email }));
   },
   clearSession() {
     localStorage.removeItem('sit_session');
@@ -153,7 +153,7 @@ const CONFIG = {
   ],
 
   // === ארגונים ===
-  ORGS: ['ויצו', 'נעמת', 'דלת פתוחה', 'לדעת לבחור נכון', 'איגוד העובדים הסוציאליים', 'לתת פה', 'לא לאלימות', 'קווים אדומים'],
+  ORGS: ['ויצו', 'נעמת', 'דלת פתוחה', 'לדעת לבחור נכון', 'איגוד העובדים הסוציאליים', 'לתת פה', 'לא לאלימות', 'קווים אדומים', 'אחר'],
 
   // === Helper functions ===
 

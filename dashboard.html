@@ -164,6 +164,8 @@ body.admin-mode .goals-edit-bar{display:flex}
 .participants-count{font-size:12px;color:var(--gray-500)}
 .participants-save{padding:8px 20px;background:var(--blue-400);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .participants-save:hover{background:var(--blue-600)}
+.pp-action-btn{padding:3px 8px;border-radius:4px;border:1px solid var(--gray-200);background:#fff;font-size:11px;cursor:pointer;font-family:inherit;color:var(--gray-600);transition:all .15s}
+.pp-action-btn:hover{background:var(--gray-50);border-color:var(--gray-300)}
 
 /* Data Table */
 .data-table-wrap{background:#fff;border-radius:var(--radius);padding:18px;border:1px solid var(--gray-200);margin-bottom:20px;overflow-x:auto;display:none}
@@ -391,6 +393,11 @@ const PLATFORMS = CONFIG.PLATFORMS;
 const TYPES = {};
 PLATFORMS.forEach(p => { TYPES[p.id] = p.types; });
 
+function displayOrg(orgName, customOrgName) {
+  if (orgName === 'אחר' && customOrgName) return `אחר — ${customOrgName}`;
+  return orgName;
+}
+
 // Entries loaded from DB
 let entries = [];
 
@@ -495,7 +502,7 @@ async function loadDashboardData() {
       entryId: row.entry_id,
       date: row.upload_date,
       uploadDate: row.upload_date,
-      person: { id: row.profile_id, name: row.profile_name, org: row.org_name },
+      person: { id: row.profile_id, name: row.profile_name, org: row.org_name, orgDisplay: displayOrg(row.org_name, row.custom_org_name) },
       platform: row.platform_id,
       platformName: plat ? plat.name : row.platform_id,
       type: row.content_type,
@@ -540,6 +547,7 @@ async function loadDashboardData() {
 
   // Build org filter dynamically from campaign participants
   const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
+  // Use raw org_name for filter chips (all "אחר" grouped under one chip)
   const poolOrgs = [...new Set((poolData || []).map(p => p.org_name))].sort();
   // Also include orgs from entries (in case someone uploaded but was removed from pool)
   const entryOrgs = [...new Set(entries.map(e => e.person.org))];
@@ -1263,7 +1271,7 @@ function renderLinkArchive() {
     div.className = 'link-item';
     const hebrewDate = e.date.slice(8) + '/' + e.date.slice(5,7);
     div.innerHTML = `<span class="li-icon">${plat ? plat.icon : '📄'}</span>
-      <div class="li-info"><div class="li-name">${e.person.name}</div><div class="li-meta">${e.person.org} · ${e.type} · ${hebrewDate}</div></div>
+      <div class="li-info"><div class="li-name">${e.person.name}</div><div class="li-meta">${e.person.orgDisplay} · ${e.type} · ${hebrewDate}</div></div>
       <a class="li-link" href="${e.link}" target="_blank" rel="noopener">${e.link}</a>
       <button class="li-copy" data-link="${e.link.replace(/"/g,'&quot;')}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`;
     list.appendChild(div);
@@ -1280,7 +1288,7 @@ function renderRawData() {
   tbody.innerHTML = '';
   d.forEach(e => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${e.date.slice(5)}</td><td>${e.person.name}</td><td>${e.person.org}</td><td>${e.platformName}</td><td>${e.type}</td><td>${e.reach.toLocaleString()}</td><td>${(e.metrics.likes || 0).toLocaleString()}</td><td>${(e.metrics.comments || 0).toLocaleString()}</td><td>${(e.metrics.shares || 0).toLocaleString()}</td>`;
+    tr.innerHTML = `<td>${e.date.slice(5)}</td><td>${e.person.name}</td><td>${e.person.orgDisplay}</td><td>${e.platformName}</td><td>${e.type}</td><td>${e.reach.toLocaleString()}</td><td>${(e.metrics.likes || 0).toLocaleString()}</td><td>${(e.metrics.comments || 0).toLocaleString()}</td><td>${(e.metrics.shares || 0).toLocaleString()}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -1405,7 +1413,7 @@ function exportCSV() {
   const d = filtered();
   let csv = 'תאריך,שם,ארגון,פלטפורמה,סוג,חשיפות,לייקים,תגובות,שיתופים,קישור\n';
   d.forEach(e => {
-    csv += `${e.date},${e.person.name},${e.person.org},${e.platformName},${e.type},${e.reach},${e.metrics.likes||0},${e.metrics.comments||0},${e.metrics.shares||0},${e.link||''}\n`;
+    csv += `${e.date},${e.person.name},${e.person.orgDisplay},${e.platformName},${e.type},${e.reach},${e.metrics.likes||0},${e.metrics.comments||0},${e.metrics.shares||0},${e.link||''}\n`;
   });
   const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
@@ -1445,105 +1453,185 @@ function changeTopic() {
 }
 
 // === Participants Panel ===
+let participantsPoolData = [];
+
 async function openParticipantsPanel() {
   if (!activeCampaignId) { showToast('אין קמפיין פעיל'); return; }
   const db = CONFIG.db();
 
-  // Show campaign name in header
   const camp = allCampaigns.find(c => c.id === activeCampaignId);
   document.getElementById('participantsTitle').textContent = '👥 משתתפים — ' + (camp ? camp.name : 'קמפיין');
 
-  // Get all pool profiles
-  const { data: allProfiles, error: profErr } = await db.rpc('get_all_profiles');
-  // Get current campaign participants
-  const { data: campParts, error: cpErr } = await db.from('campaign_participants').select('profile_id').eq('campaign_id', activeCampaignId);
+  // Load participants with email, custom_org_name, status
+  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
+  participantsPoolData = poolData || [];
 
-  console.log('Participants panel:', { activeCampaignId, campParts: campParts?.length, allProfiles: allProfiles?.length, profErr, cpErr });
+  renderParticipantsList();
+  document.getElementById('participantsOverlay').classList.add('show');
+}
 
-  const inCampaign = new Set((campParts || []).map(cp => cp.profile_id));
-  const profiles = (allProfiles || []).filter(p => p.is_active);
+function renderParticipantsList() {
+  const body = document.getElementById('participantsBody');
+  const activeCount = participantsPoolData.filter(p => p.status === 'active').length;
+  const suspendedCount = participantsPoolData.filter(p => p.status === 'suspended').length;
+  document.getElementById('participantsCount').textContent = `${activeCount} פעילים${suspendedCount ? ` · ${suspendedCount} מושהים` : ''}`;
+
+  if (participantsPoolData.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray-400)">אין משתתפים בקמפיין עדיין</div>';
+    return;
+  }
 
   // Group by org
   const byOrg = {};
-  profiles.forEach(p => {
-    const org = p.org_name || 'ללא ארגון';
+  participantsPoolData.forEach(p => {
+    const org = displayOrg(p.org_name, p.custom_org_name) || 'ללא ארגון';
     if (!byOrg[org]) byOrg[org] = [];
     byOrg[org].push(p);
   });
 
-  const body = document.getElementById('participantsBody');
   body.innerHTML = '';
-
   Object.keys(byOrg).sort().forEach(org => {
     const group = document.createElement('div');
     group.className = 'participants-org-group';
     group.innerHTML = `<div class="participants-org-name">${org}</div>`;
     byOrg[org].sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
       const row = document.createElement('div');
-      const isIn = inCampaign.has(p.profile_id);
-      row.className = 'participant-row' + (isIn ? ' in-campaign' : '');
-      const checked = isIn ? 'checked' : '';
-      row.innerHTML = `<input type="checkbox" id="pp_${p.profile_id}" data-pid="${p.profile_id}" ${checked} onchange="toggleParticipantRow(this)"><label for="pp_${p.profile_id}">${p.name}</label>`;
+      const isSuspended = p.status === 'suspended';
+      row.className = 'participant-row' + (isSuspended ? '' : ' in-campaign');
+      row.id = 'prow_' + p.profile_id;
+      const badge = isSuspended
+        ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fff8e1;color:#92400e;font-weight:500">מושהה</span>'
+        : '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--teal-50);color:var(--teal-600);font-weight:500">פעיל</span>';
+      const actionBtn = isSuspended
+        ? `<button class="pp-action-btn" style="color:var(--teal-600)" onclick="reactivateParticipant('${p.profile_id}')">הפעל</button>`
+        : `<button class="pp-action-btn" style="color:#92400e" onclick="suspendParticipant('${p.profile_id}')">השהה</button>`;
+      row.innerHTML = `
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;color:var(--gray-700)">${p.name} ${badge}</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:2px;direction:ltr;text-align:right">${p.email || 'לא הוזן מייל'}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="pp-action-btn" onclick="showEditParticipant('${p.profile_id}')">ערוך</button>
+          ${actionBtn}
+        </div>`;
       group.appendChild(row);
     });
     body.appendChild(group);
   });
-
-  updateParticipantsCount();
-  document.getElementById('participantsOverlay').classList.add('show');
 }
 
-function toggleParticipantRow(cb) {
-  cb.closest('.participant-row').classList.toggle('in-campaign', cb.checked);
-  updateParticipantsCount();
+async function suspendParticipant(profileId) {
+  const db = CONFIG.db();
+  const { error } = await db.rpc('suspend_participant', { p_campaign_id: activeCampaignId, p_profile_id: profileId });
+  if (error) { showToast('שגיאה בהשהיה'); return; }
+  const p = participantsPoolData.find(x => x.profile_id === profileId);
+  if (p) p.status = 'suspended';
+  renderParticipantsList();
+  showToast('המשתתף הושהה');
 }
 
-function updateParticipantsCount() {
-  const checks = document.querySelectorAll('#participantsBody input[type=checkbox]');
-  const total = checks.length;
-  const checked = Array.from(checks).filter(c => c.checked).length;
-  document.getElementById('participantsCount').textContent = `${checked} מתוך ${total} נבחרו`;
+async function reactivateParticipant(profileId) {
+  const db = CONFIG.db();
+  const { error } = await db.rpc('reactivate_participant', { p_campaign_id: activeCampaignId, p_profile_id: profileId });
+  if (error) { showToast('שגיאה בהפעלה'); return; }
+  const p = participantsPoolData.find(x => x.profile_id === profileId);
+  if (p) p.status = 'active';
+  renderParticipantsList();
+  showToast('המשתתף הופעל מחדש');
 }
 
-function selectAllParticipants() {
-  document.querySelectorAll('#participantsBody input[type=checkbox]').forEach(cb => {
-    cb.checked = true;
-    cb.closest('.participant-row').classList.add('in-campaign');
+function showAddParticipantForm() {
+  const area = document.getElementById('addParticipantArea');
+  if (area.style.display === 'block') { area.style.display = 'none'; return; }
+  // Load orgs for dropdown
+  const db = CONFIG.db();
+  db.from('organizations').select('id, name').order('name').then(({ data }) => {
+    const sel = document.getElementById('addPartOrg');
+    sel.innerHTML = '<option value="">בחירת ארגון...</option>';
+    (data || []).forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id; opt.textContent = o.name; opt.dataset.name = o.name;
+      sel.appendChild(opt);
+    });
   });
-  updateParticipantsCount();
+  document.getElementById('addPartName').value = '';
+  document.getElementById('addPartEmail').value = '';
+  document.getElementById('addPartCustomOrg').value = '';
+  document.getElementById('addPartCustomOrgField').style.display = 'none';
+  area.style.display = 'block';
 }
 
-function clearAllParticipants() {
-  document.querySelectorAll('#participantsBody input[type=checkbox]').forEach(cb => {
-    cb.checked = false;
-    cb.closest('.participant-row').classList.remove('in-campaign');
+function onAddPartOrgChange() {
+  const sel = document.getElementById('addPartOrg');
+  const opt = sel.options[sel.selectedIndex];
+  const isOther = opt && opt.dataset.name === 'אחר';
+  document.getElementById('addPartCustomOrgField').style.display = isOther ? 'block' : 'none';
+}
+
+async function addParticipantManually() {
+  const name = document.getElementById('addPartName').value.trim();
+  const email = document.getElementById('addPartEmail').value.trim();
+  const orgId = document.getElementById('addPartOrg').value;
+  const selOpt = document.getElementById('addPartOrg').options[document.getElementById('addPartOrg').selectedIndex];
+  const isOther = selOpt && selOpt.dataset.name === 'אחר';
+  const customOrg = isOther ? document.getElementById('addPartCustomOrg').value.trim() : null;
+
+  if (!name || !email || !orgId) { showToast('נא למלא שם, מייל וארגון'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('כתובת מייל לא תקינה'); return; }
+
+  const db = CONFIG.db();
+  const { data, error } = await db.rpc('register_profile', {
+    p_name: name, p_email: email, p_org_id: orgId,
+    p_custom_org_name: customOrg, p_campaign_id: activeCampaignId
   });
-  updateParticipantsCount();
+  if (error) { showToast('שגיאה: ' + error.message); return; }
+
+  document.getElementById('addParticipantArea').style.display = 'none';
+  // Reload panel
+  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
+  participantsPoolData = poolData || [];
+  renderParticipantsList();
+  showToast('משתתף נוסף בהצלחה');
+}
+
+function showEditParticipant(profileId) {
+  const p = participantsPoolData.find(x => x.profile_id === profileId);
+  if (!p) return;
+  const row = document.getElementById('prow_' + profileId);
+  if (!row) return;
+
+  row.innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+      <input id="editName_${profileId}" value="${p.name}" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit">
+      <input id="editEmail_${profileId}" value="${p.email || ''}" placeholder="מייל" dir="ltr" style="padding:4px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;text-align:left">
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
+      <button class="pp-action-btn" style="color:var(--teal-600);font-weight:600" onclick="saveEditParticipant('${profileId}')">שמור</button>
+      <button class="pp-action-btn" onclick="renderParticipantsList()">ביטול</button>
+    </div>`;
+}
+
+async function saveEditParticipant(profileId) {
+  const newName = document.getElementById('editName_' + profileId).value.trim();
+  const newEmail = document.getElementById('editEmail_' + profileId).value.trim();
+  if (!newName) { showToast('נא למלא שם'); return; }
+
+  const db = CONFIG.db();
+  const updates = { name: newName };
+  if (newEmail) updates.email = newEmail.toLowerCase();
+  const { error } = await db.from('profiles').update(updates).eq('id', profileId);
+  if (error) { showToast('שגיאה: ' + error.message); return; }
+
+  // Reload
+  const { data: poolData } = await db.rpc('get_campaign_pool', { p_campaign_id: activeCampaignId });
+  participantsPoolData = poolData || [];
+  renderParticipantsList();
+  showToast('פרטים עודכנו');
 }
 
 function closeParticipantsPanel() {
   document.getElementById('participantsOverlay').classList.remove('show');
-}
-
-async function saveParticipants() {
-  const db = CONFIG.db();
-  const checks = document.querySelectorAll('#participantsBody input[type=checkbox]');
-  const selectedIds = Array.from(checks).filter(c => c.checked).map(c => c.dataset.pid);
-
-  // Delete existing participants for this campaign
-  const { error: delErr } = await db.from('campaign_participants').delete().eq('campaign_id', activeCampaignId);
-  if (delErr) { showToast('שגיאה: ' + delErr.message); return; }
-
-  // Insert new participants
-  if (selectedIds.length > 0) {
-    const rows = selectedIds.map(pid => ({ campaign_id: activeCampaignId, profile_id: pid }));
-    const { error: insErr } = await db.from('campaign_participants').insert(rows);
-    if (insErr) { showToast('שגיאה: ' + insErr.message); return; }
-  }
-
-  showToast(`✅ ${selectedIds.length} משתתפים עודכנו`);
-  closeParticipantsPanel();
-  loadDashboardData(); // refresh
+  loadDashboardData(); // refresh in case of changes
 }
 
 // Initial load from Supabase
@@ -1558,13 +1646,25 @@ loadCampaignDropdown().then(() => loadDashboardData());
       <button class="participants-close" onclick="closeParticipantsPanel()">✕</button>
     </div>
     <div class="participants-actions">
-      <button onclick="selectAllParticipants()">✓ בחר הכל</button>
-      <button onclick="clearAllParticipants()">✕ נקה הכל</button>
+      <button onclick="showAddParticipantForm()">+ הוסף ידנית</button>
+    </div>
+    <div id="addParticipantArea" style="display:none;padding:0 20px 12px;border-bottom:1px solid var(--gray-100)">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <input id="addPartName" placeholder="שם מלא" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit">
+        <input id="addPartEmail" placeholder="מייל" type="email" dir="ltr" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;text-align:left">
+        <select id="addPartOrg" onchange="onAddPartOrgChange()" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit">
+          <option value="">בחירת ארגון...</option>
+        </select>
+        <div id="addPartCustomOrgField" style="display:none">
+          <input id="addPartCustomOrg" placeholder="שם הארגון" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;width:100%">
+        </div>
+        <button onclick="addParticipantManually()" style="padding:6px 14px;background:var(--blue-400);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">הוסף</button>
+      </div>
     </div>
     <div class="participants-body" id="participantsBody"></div>
     <div class="participants-footer">
-      <span class="participants-count" id="participantsCount">0 משתתפים נבחרו</span>
-      <button class="participants-save" onclick="saveParticipants()">שמירה</button>
+      <span class="participants-count" id="participantsCount">0 פעילים</span>
+      <button class="participants-save" onclick="closeParticipantsPanel()">סגור</button>
     </div>
   </div>
 </div>
