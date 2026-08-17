@@ -1270,10 +1270,12 @@ function renderLinkArchive() {
     const div = document.createElement('div');
     div.className = 'link-item';
     const hebrewDate = e.date.slice(8) + '/' + e.date.slice(5,7);
+    const linkHtml = e.link
+      ? `<a class="li-link" href="${e.link}" target="_blank" rel="noopener">${e.link}</a><button class="li-copy" data-link="${e.link.replace(/"/g,'&quot;')}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`
+      : '<span class="li-link" style="color:var(--gray-400);font-style:italic">ללא קישור</span>';
     div.innerHTML = `<span class="li-icon">${plat ? plat.icon : '📄'}</span>
       <div class="li-info"><div class="li-name">${e.person.name} — ${e.person.orgDisplay}</div><div class="li-meta">${e.type} · ${hebrewDate}</div></div>
-      <a class="li-link" href="${e.link}" target="_blank" rel="noopener">${e.link}</a>
-      <button class="li-copy" data-link="${e.link.replace(/"/g,'&quot;')}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`;
+      ${linkHtml}`;
     list.appendChild(div);
   });
 

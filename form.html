@@ -910,6 +910,12 @@ function renderCurrentPlatformStep() {
   document.getElementById('uploadLink').value = data.link;
   document.getElementById('uploadDate').value = data.date;
 
+  // Newspaper: link is optional
+  const isNewspaper = plat.id === 'newspaper';
+  const linkLabel = document.querySelector('.link-field label');
+  if (linkLabel) linkLabel.innerHTML = isNewspaper ? 'קישור לתוכן <span style="font-size:11px;color:var(--gray-400)">(אופציונלי)</span>' : 'קישור לתוכן <span style="color:var(--red-400)">*</span>';
+  document.getElementById('uploadLink').placeholder = isNewspaper ? 'אופציונלי — הדביקו קישור אם יש' : 'הדביקו קישור מלא, למשל https://facebook.com/...';
+
   const isLast = currentPlatformIdx === total - 1;
   document.getElementById('btnNextPlatform').textContent = isLast ? (total > 1 ? 'שמור הכל' : 'שמור') : 'הבא';
   document.getElementById('btnPrevPlatform').style.display = currentPlatformIdx > 0 ? '' : 'none';
@@ -922,17 +928,24 @@ function validateCurrentStep() {
   const date = document.getElementById('uploadDate').value;
   const linkInput = document.getElementById('uploadLink');
   const hint = document.getElementById('linkHint');
+  const plat = uploadSelectedPlatforms[currentPlatformIdx];
+  const isNewspaper = plat && plat.id === 'newspaper';
 
   if (link && !isValidUrl(link)) {
     linkInput.style.borderColor = 'var(--red-400)';
     hint.textContent = 'הקישור חייב להתחיל ב-https:// או http://';
     hint.style.color = 'var(--red-400)';
     document.getElementById('btnNextPlatform').disabled = true;
-  } else if (!link) {
+  } else if (!link && !isNewspaper) {
     linkInput.style.borderColor = '';
     hint.textContent = 'יש להזין קישור מלא שמתחיל ב-https://';
     hint.style.color = 'var(--gray-400)';
     document.getElementById('btnNextPlatform').disabled = true;
+  } else if (!link && isNewspaper) {
+    linkInput.style.borderColor = '';
+    hint.textContent = 'אופציונלי — ניתן להמשיך בלי קישור';
+    hint.style.color = 'var(--gray-400)';
+    document.getElementById('btnNextPlatform').disabled = !date;
   } else {
     linkInput.style.borderColor = 'var(--teal-400)';
     hint.textContent = '✓ קישור תקין';
@@ -960,8 +973,10 @@ function savePlatformStepData() {
 
 function nextPlatformStep() {
   const link = document.getElementById('uploadLink').value.trim();
-  if (!link) { showToast('נא למלא קישור לתוכן'); return; }
-  if (!isValidUrl(link)) { showToast('נא להזין קישור תקין (https://...)'); return; }
+  const plat = uploadSelectedPlatforms[currentPlatformIdx];
+  const isNewspaper = plat && plat.id === 'newspaper';
+  if (!link && !isNewspaper) { showToast('נא למלא קישור לתוכן'); return; }
+  if (link && !isValidUrl(link)) { showToast('נא להזין קישור תקין (https://...)'); return; }
   savePlatformStepData();
   if (currentPlatformIdx < uploadSelectedPlatforms.length - 1) {
     currentPlatformIdx++;
@@ -998,9 +1013,10 @@ async function saveAllUploads() {
 
   for (const plat of uploadSelectedPlatforms) {
     const data = uploadPlatformData[plat.id];
-    if (!data.link || !data.date) continue;
-    data.link = sanitizeLink(data.link);
-    if (!data.link) continue;
+    if (!data.date) continue;
+    const isNewspaper = plat.id === 'newspaper';
+    if (!data.link && !isNewspaper) continue;
+    if (data.link) { data.link = sanitizeLink(data.link); if (!data.link) continue; }
 
     const metrics = {};
     plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type)).forEach(m => { metrics[m.id] = 0; });
@@ -1010,7 +1026,7 @@ async function saveAllUploads() {
       p_campaign_id: activeCampaignId,
       p_platform_id: plat.id,
       p_content_type: data.type,
-      p_link: data.link,
+      p_link: data.link || null,
       p_upload_date: data.date,
       p_initial_metrics: metrics
     });
