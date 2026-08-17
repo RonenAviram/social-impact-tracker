@@ -247,11 +247,11 @@ textarea{resize:vertical;min-height:60px}
       <div class="form-row">
         <div class="form-group">
           <label>תאריך התחלה</label>
-          <input type="date" id="campStart" value="2026-08-15">
+          <input type="date" id="campStart">
         </div>
         <div class="form-group">
           <label>תאריך סיום</label>
-          <input type="date" id="campEnd" value="2026-08-21">
+          <input type="date" id="campEnd">
         </div>
       </div>
 
@@ -438,6 +438,12 @@ async function init() {
 
     // Don't pre-populate — participants self-register via campaign link
     participants = [];
+
+    // Default start date = today, end date = today + 7 days
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('campStart').value = today;
+    const weekLater = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    document.getElementById('campEnd').value = weekLater;
 
     renderOrgs();
     renderParticipants();
