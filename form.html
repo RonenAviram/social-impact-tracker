@@ -29,6 +29,8 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .screen{display:none;animation:fadeIn .3s ease}
 .screen.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(29,158,117,.5)}70%{box-shadow:0 0 0 12px rgba(29,158,117,0)}100%{box-shadow:0 0 0 0 rgba(29,158,117,0)}}
+.dashboard-link.highlight{background:var(--teal-400);color:#fff;border-color:var(--teal-400);animation:pulseGlow 1.2s ease-in-out 3;font-weight:700}
 
 /* Cards & Fields */
 .login-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:24px 20px}
@@ -270,7 +272,7 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
       <button class="add-btn" id="btnAddContent" onclick="showUploadScreen()">+ הוסף תוכן</button>
     </div>
     <div id="contentList"></div>
-    <a class="skip-link" style="margin-top:24px" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')">צפייה בדשבורד ←</a>
+    <button class="btn btn-outline btn-full dashboard-link" id="btnDashboard" onclick="window.open('dashboard.html?campaign=' + activeCampaignId,'_blank')" style="margin-top:20px;font-size:15px;padding:14px">📊 צפייה בדשבורד ←</button>
   </div>
 
   <!-- Screen: Upload new content -->
@@ -311,6 +313,11 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
         <div class="field">
           <label>תאריך העלאה</label>
           <input type="date" id="uploadDate">
+        </div>
+        <!-- Metrics fields (inline with upload) -->
+        <div id="uploadMetrics" style="margin-top:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--blue-800);margin-bottom:8px;padding-top:8px;border-top:1px solid var(--gray-200)">נתונים (אם יש כבר — אפשר למלא אחר כך)</div>
+          <div class="metrics-grid" id="uploadMetricsGrid"></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-primary" id="btnNextPlatform" onclick="nextPlatformStep()">הבא</button>
@@ -902,6 +909,14 @@ function renderCurrentPlatformStep() {
       data.type = t;
       pills.querySelectorAll('.type-pill').forEach(p => p.classList.remove('selected'));
       pill.classList.add('selected');
+      // Re-render metrics for new content type
+      const fm = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(t));
+      if (!data.metrics) data.metrics = {};
+      const mg = document.getElementById('uploadMetricsGrid');
+      mg.innerHTML = '';
+      fm.forEach(m => {
+        mg.innerHTML += `<div class="metric-field"><label>${m.label}</label><input type="number" inputmode="numeric" data-upload-metric="${m.id}" value="${data.metrics[m.id] || ''}" min="0" placeholder="0"></div>`;
+      });
       validateCurrentStep();
     };
     pills.appendChild(pill);
@@ -909,6 +924,19 @@ function renderCurrentPlatformStep() {
 
   document.getElementById('uploadLink').value = data.link;
   document.getElementById('uploadDate').value = data.date;
+
+  // Render metrics fields for this platform
+  const metricsGrid = document.getElementById('uploadMetricsGrid');
+  const filteredMetrics = plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type));
+  if (!data.metrics) data.metrics = {};
+  metricsGrid.innerHTML = '';
+  filteredMetrics.forEach(m => {
+    const val = data.metrics[m.id] || '';
+    metricsGrid.innerHTML += `<div class="metric-field">
+      <label>${m.label}</label>
+      <input type="number" inputmode="numeric" data-upload-metric="${m.id}" value="${val}" min="0" placeholder="0">
+    </div>`;
+  });
 
   // Newspaper: link is optional
   const isNewspaper = plat.id === 'newspaper';
@@ -969,6 +997,11 @@ function savePlatformStepData() {
   const plat = uploadSelectedPlatforms[currentPlatformIdx];
   uploadPlatformData[plat.id].link = document.getElementById('uploadLink').value.trim();
   uploadPlatformData[plat.id].date = document.getElementById('uploadDate').value;
+  // Save metrics
+  if (!uploadPlatformData[plat.id].metrics) uploadPlatformData[plat.id].metrics = {};
+  document.querySelectorAll('#uploadMetricsGrid input[data-upload-metric]').forEach(inp => {
+    uploadPlatformData[plat.id].metrics[inp.dataset.uploadMetric] = parseInt(inp.value) || 0;
+  });
 }
 
 function nextPlatformStep() {
@@ -1019,7 +1052,7 @@ async function saveAllUploads() {
     if (data.link) { data.link = sanitizeLink(data.link); if (!data.link) continue; }
 
     const metrics = {};
-    plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type)).forEach(m => { metrics[m.id] = 0; });
+    plat.metrics.filter(m => !m.onlyTypes || m.onlyTypes.includes(data.type)).forEach(m => { metrics[m.id] = (data.metrics && data.metrics[m.id]) || 0; });
 
     const { error } = await db.rpc('add_content_entry', {
       p_profile_id: currentUser.profileId,
@@ -1046,6 +1079,7 @@ async function saveAllUploads() {
   // Direct to personal area with toast (no success screen)
   showToast(names.length > 1 ? `${names.length} תכנים נוספו בהצלחה` : 'התוכן נוסף בהצלחה');
   showScreen('screenPersonal');
+  highlightDashboardBtn();
 }
 
 // =================== UPDATE ===================
@@ -1118,6 +1152,7 @@ async function saveUpdate() {
   // Direct to personal area with toast (no success screen)
   showToast('הנתונים עודכנו בהצלחה');
   showScreen('screenPersonal');
+  highlightDashboardBtn();
 }
 
 // =================== DELETE ===================
@@ -1157,6 +1192,14 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function highlightDashboardBtn() {
+  const btn = document.getElementById('btnDashboard');
+  if (!btn) return;
+  btn.classList.add('highlight');
+  btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => btn.classList.remove('highlight'), 5000);
 }
 
 // Init
