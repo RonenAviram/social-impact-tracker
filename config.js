@@ -8,7 +8,7 @@ const CONFIG = {
   SUPABASE_URL: 'https://siufqucjxcuhdfexzfkq.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpdWZxdWNqeGN1aGRmZXh6ZmtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MzU4MTcsImV4cCI6MjEwMTUxMTgxN30.82aJREjLWV-DZ3FX-nrJwy2-6o60vq9NGZgWqqySeo8',
   // Campaign ID — set after running migration, then update this value
-  CAMPAIGN_ID: '87ffac94-18ab-43e3-bedb-f7cc877973f8',
+  CAMPAIGN_ID: 'b36aa0b1-f725-488c-ac2c-3e26281114a6',
 
   // Default admin password hash (SHA-256 of REDLINES2026) — fallback when no campaigns exist
   DEFAULT_ADMIN_HASH: 'deef947764a90eda2b5a09539c30f9b68f7d139ca5fd44775bf65dc9ff88cf2d',
