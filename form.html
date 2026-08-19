@@ -393,7 +393,7 @@ function getActiveCampaignId() {
   const params = new URLSearchParams(window.location.search);
   return params.get('campaign') || CONFIG.CAMPAIGN_ID;
 }
-const activeCampaignId = getActiveCampaignId();
+let activeCampaignId = getActiveCampaignId();
 
 // =================== HELPERS ===================
 function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.classList.add('hidden'); }
@@ -422,9 +422,27 @@ async function init() {
       CONFIG.clearSession();
     }
 
-    // Load campaign info
-    const { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
-    if (campData) CAMPAIGN = campData;
+    // Load campaign info — with fallback if configured ID doesn't exist
+    let { data: campData } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
+    if (!campData) {
+      // Campaign doesn't exist in DB — fall back to first active campaign
+      const { data: allCamps } = await db.from('campaigns')
+        .select('id, name, status, start_date, end_date')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (allCamps && allCamps.length > 0) {
+        activeCampaignId = allCamps[0].id;
+        const { data: fallbackCamp } = await db.rpc('get_campaign', { p_campaign_id: activeCampaignId });
+        if (fallbackCamp) campData = fallbackCamp;
+        console.warn('Campaign ID from config not found, fell back to:', activeCampaignId);
+      } else {
+        hideLoading();
+        showToast('לא נמצאו קמפיינים פעילים במערכת');
+        return;
+      }
+    }
+    CAMPAIGN = campData;
 
     // Update header
     document.getElementById('campaignName').textContent = CAMPAIGN.name;
