@@ -28,7 +28,6 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
 .topbar-logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue-400),var(--teal-400));display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .topbar-logo svg{width:18px;height:18px;fill:#fff}
 .topbar h1{font-size:18px;font-weight:600;color:var(--blue-900)}
-.topbar .blitz-badge{background:var(--teal-50);color:var(--teal-600);font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .user-chip{display:flex;align-items:center;gap:8px;background:var(--gray-50);padding:5px 12px 5px 5px;border-radius:20px}
 .user-chip .avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-400);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
@@ -217,7 +216,6 @@ body.admin-mode .metric-card:hover,body.admin-mode .goals-section:hover,body.adm
 @media(max-width:600px){
   .topbar{padding:8px 12px}
   .topbar h1{font-size:15px}
-  .topbar .blitz-badge{font-size:10px;padding:3px 8px}
   .topbar-left{gap:8px}
   .user-chip .uname{display:none}
   .admin-toggle span{display:none}
@@ -393,6 +391,12 @@ const ORGS = CONFIG.ORGS;
 const PLATFORMS = CONFIG.PLATFORMS;
 const TYPES = {};
 PLATFORMS.forEach(p => { TYPES[p.id] = p.types; });
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 
 function displayOrg(orgName, customOrgName) {
   if (orgName === 'אחר' && customOrgName) return `אחר — ${customOrgName}`;
@@ -1159,12 +1163,13 @@ function renderOrgBreakdown() {
   allDiv.onclick = () => { selectedOrgs.clear(); syncOrgChips(); renderAll(); };
   grid.appendChild(allDiv);
 
-  ORGS.forEach(o => {
+  // Build org list dynamically from actual data (not static CONFIG.ORGS)
+  const dynamicOrgs = [...new Set(allData.map(e => e.person.org))].sort();
+  dynamicOrgs.forEach(o => {
     const od = allData.filter(e => e.person.org === o);
-    if (od.length === 0) return; // hide empty orgs
     const div = document.createElement('div');
     div.className = 'breakdown-card' + (selectedOrgs.has(o) ? ' active-bk' : '');
-    div.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">${o}</div><div class="bk-val">${od.length}</div><div class="bk-sub">תכנים</div>`;
+    div.innerHTML = `<div class="bk-icon">🏢</div><div class="bk-name">${escapeHtml(o)}</div><div class="bk-val">${od.length}</div><div class="bk-sub">תכנים</div>`;
     div.onclick = () => { if (selectedOrgs.has(o)) selectedOrgs.delete(o); else selectedOrgs.add(o); syncOrgChips(); renderAll(); };
     grid.appendChild(div);
   });
@@ -1271,11 +1276,12 @@ function renderLinkArchive() {
     const div = document.createElement('div');
     div.className = 'link-item';
     const hebrewDate = e.date.slice(8) + '/' + e.date.slice(5,7);
+    const safeLink = e.link ? escapeHtml(e.link) : '';
     const linkHtml = e.link
-      ? `<a class="li-link" href="${e.link}" target="_blank" rel="noopener">${e.link}</a><button class="li-copy" data-link="${e.link.replace(/"/g,'&quot;')}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`
+      ? `<a class="li-link" href="${safeLink}" target="_blank" rel="noopener">${safeLink}</a><button class="li-copy" data-link="${safeLink}" onclick="copyLink(this.dataset.link)" title="העתקת קישור">📋</button>`
       : '<span class="li-link" style="color:var(--gray-400);font-style:italic">ללא קישור</span>';
     div.innerHTML = `<span class="li-icon">${plat ? plat.icon : '📄'}</span>
-      <div class="li-info"><div class="li-name">${e.person.name} — ${e.person.orgDisplay}</div><div class="li-meta">${e.type} · ${hebrewDate}</div></div>
+      <div class="li-info"><div class="li-name">${escapeHtml(e.person.name)} — ${escapeHtml(e.person.orgDisplay)}</div><div class="li-meta">${escapeHtml(e.type)} · ${hebrewDate}</div></div>
       ${linkHtml}`;
     list.appendChild(div);
   });
@@ -1505,16 +1511,17 @@ function renderParticipantsList() {
       const badge = isSuspended
         ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fff8e1;color:#92400e;font-weight:500">מושהה</span>'
         : '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--teal-50);color:var(--teal-600);font-weight:500">פעיל</span>';
+      const safeId = escapeHtml(p.profile_id);
       const actionBtn = isSuspended
-        ? `<button class="pp-action-btn" style="color:var(--teal-600)" onclick="reactivateParticipant('${p.profile_id}')">הפעל</button>`
-        : `<button class="pp-action-btn" style="color:#92400e" onclick="suspendParticipant('${p.profile_id}')">השהה</button>`;
+        ? `<button class="pp-action-btn" style="color:var(--teal-600)" data-pid="${safeId}" onclick="reactivateParticipant(this.dataset.pid)">הפעל</button>`
+        : `<button class="pp-action-btn" style="color:#92400e" data-pid="${safeId}" onclick="suspendParticipant(this.dataset.pid)">השהה</button>`;
       row.innerHTML = `
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:500;color:var(--gray-700)">${p.name} ${badge}</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:2px;direction:ltr;text-align:right">${p.email || 'לא הוזן מייל'}</div>
+          <div style="font-size:13px;font-weight:500;color:var(--gray-700)">${escapeHtml(p.name)} ${badge}</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:2px;direction:ltr;text-align:right">${escapeHtml(p.email || 'לא הוזן מייל')}</div>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0">
-          <button class="pp-action-btn" onclick="showEditParticipant('${p.profile_id}')">ערוך</button>
+          <button class="pp-action-btn" data-pid="${safeId}" onclick="showEditParticipant(this.dataset.pid)">ערוך</button>
           ${actionBtn}
         </div>`;
       group.appendChild(row);

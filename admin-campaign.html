@@ -194,9 +194,9 @@ textarea{resize:vertical;min-height:60px}
   </div>
   <div class="topbar-left">
     <div class="admin-badge">⚙️ ממשק ניהול</div>
-    <div class="user-chip">
-      <div class="avatar">מפ</div>
-      <span class="uname">מיכל פרינס</span>
+    <div class="user-chip" id="adminUserChip">
+      <div class="avatar" id="adminAvatar">מנ</div>
+      <span class="uname" id="adminName">מנהל</span>
     </div>
   </div>
 </div>
@@ -241,7 +241,7 @@ textarea{resize:vertical;min-height:60px}
 
       <div class="form-group">
         <label>שם הקמפיין</label>
-        <input type="text" id="campName" placeholder="לדוגמה: מניעת אלימות בזוגיות צעירה" value="מניעת אלימות בזוגיות צעירה">
+        <input type="text" id="campName" placeholder="לדוגמה: מניעת אלימות בזוגיות צעירה" value="">
       </div>
 
       <div class="form-row">
@@ -257,7 +257,7 @@ textarea{resize:vertical;min-height:60px}
 
       <div class="form-group">
         <label>תיאור קצר (אופציונלי)</label>
-        <textarea id="campDesc" placeholder="מה המטרה? למי הקמפיין מיועד?">קמפיין מרוכז למודעות ציבורית בנושא אלימות בזוגיות צעירה. כל הארגונים מפרסמים תכנים מתואמים במקביל.</textarea>
+        <textarea id="campDesc" placeholder="מה המטרה? למי הקמפיין מיועד?"></textarea>
       </div>
 
       <div class="form-group">
@@ -393,7 +393,7 @@ textarea{resize:vertical;min-height:60px}
     <div class="success-screen">
       <div class="success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
       <h2>הקמפיין הופעל בהצלחה!</h2>
-      <p id="successMsg">הקמפיין "מניעת אלימות בזוגיות צעירה" פעיל ומוכן לקבלת נתונים.</p>
+      <p id="successMsg">הקמפיין פעיל ומוכן לקבלת נתונים.</p>
       <div style="margin-top:24px;display:flex;flex-direction:column;gap:8px">
         <button class="btn btn-primary" onclick="copyFormLink()">📋 העתקת קישור הטופס</button>
         <button class="btn btn-secondary" onclick="window.open('dashboard.html?campaign='+window._lastCampaignId,'_blank')">צפייה בדשבורד</button>
