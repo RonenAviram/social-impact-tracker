@@ -611,6 +611,14 @@ async function doRegister() {
       return;
     }
 
+    // Block duplicate email registration in the same campaign
+    if (data.already_registered) {
+      showToast('כתובת המייל הזו כבר רשומה בקמפיין זה. השתמשו ב"כבר נרשמתי — כניסה"');
+      btn.disabled = false;
+      btn.textContent = 'הרשמה וכניסה';
+      return;
+    }
+
     const profileId = data.profile_id;
     const actualName = data.name;
     const displayOrgName = displayOrg(orgName, customOrgName);
