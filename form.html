@@ -307,8 +307,8 @@ body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--gray-50);co
         </div>
         <div class="field link-field">
           <label>קישור לתוכן <span style="color:var(--red-400)">*</span></label>
-          <input type="url" id="uploadLink" placeholder="הדביקו קישור מלא, למשל https://facebook.com/...">
-          <div id="linkHint" style="font-size:11px;color:var(--gray-400);margin-top:4px">יש להזין קישור מלא שמתחיל ב-https://</div>
+          <input type="text" id="uploadLink" placeholder="הדביקו קישור לתוכן">
+          <div id="linkHint" style="font-size:11px;color:var(--gray-400);margin-top:4px"></div>
         </div>
         <div class="field">
           <label>תאריך העלאה</label>
@@ -968,7 +968,7 @@ function renderCurrentPlatformStep() {
   const isNewspaper = plat.id === 'newspaper';
   const linkLabel = document.querySelector('.link-field label');
   if (linkLabel) linkLabel.innerHTML = isNewspaper ? 'קישור לתוכן <span style="font-size:11px;color:var(--gray-400)">(אופציונלי)</span>' : 'קישור לתוכן <span style="color:var(--red-400)">*</span>';
-  document.getElementById('uploadLink').placeholder = isNewspaper ? 'אופציונלי — הדביקו קישור אם יש' : 'הדביקו קישור מלא, למשל https://facebook.com/...';
+  document.getElementById('uploadLink').placeholder = isNewspaper ? 'אופציונלי — הדביקו קישור אם יש' : 'הדביקו קישור לתוכן';
 
   const isLast = currentPlatformIdx === total - 1;
   document.getElementById('btnNextPlatform').textContent = isLast ? (total > 1 ? 'שמור הכל' : 'שמור') : 'הבא';
@@ -985,15 +985,9 @@ function validateCurrentStep() {
   const plat = uploadSelectedPlatforms[currentPlatformIdx];
   const isNewspaper = plat && plat.id === 'newspaper';
 
-  if (link && !isValidUrl(link)) {
-    linkInput.style.borderColor = 'var(--red-400)';
-    hint.textContent = 'הקישור חייב להתחיל ב-https:// או http://';
-    hint.style.color = 'var(--red-400)';
-    document.getElementById('btnNextPlatform').disabled = true;
-  } else if (!link && !isNewspaper) {
+  if (!link && !isNewspaper) {
     linkInput.style.borderColor = '';
-    hint.textContent = 'יש להזין קישור מלא שמתחיל ב-https://';
-    hint.style.color = 'var(--gray-400)';
+    hint.textContent = '';
     document.getElementById('btnNextPlatform').disabled = true;
   } else if (!link && isNewspaper) {
     linkInput.style.borderColor = '';
@@ -1002,8 +996,7 @@ function validateCurrentStep() {
     document.getElementById('btnNextPlatform').disabled = !date;
   } else {
     linkInput.style.borderColor = 'var(--teal-400)';
-    hint.textContent = '✓ קישור תקין';
-    hint.style.color = 'var(--teal-600)';
+    hint.textContent = '';
     document.getElementById('btnNextPlatform').disabled = !date;
   }
 }
@@ -1035,7 +1028,7 @@ function nextPlatformStep() {
   const plat = uploadSelectedPlatforms[currentPlatformIdx];
   const isNewspaper = plat && plat.id === 'newspaper';
   if (!link && !isNewspaper) { showToast('נא למלא קישור לתוכן'); return; }
-  if (link && !isValidUrl(link)) { showToast('נא להזין קישור תקין (https://...)'); return; }
+  
   savePlatformStepData();
   if (currentPlatformIdx < uploadSelectedPlatforms.length - 1) {
     currentPlatformIdx++;
