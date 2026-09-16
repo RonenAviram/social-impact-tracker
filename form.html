@@ -455,6 +455,11 @@ async function init() {
     }
 
     document.getElementById('uploadDate').value = today();
+    // Restrict date inputs to campaign start date
+    if (CAMPAIGN.start_date) {
+      document.getElementById('uploadDate').min = CAMPAIGN.start_date;
+      document.getElementById('updateDate').min = CAMPAIGN.start_date;
+    }
 
     // Build upload platform grid
     const grid = document.getElementById('uploadPlatformGrid');
@@ -985,6 +990,17 @@ function validateCurrentStep() {
   const plat = uploadSelectedPlatforms[currentPlatformIdx];
   const isNewspaper = plat && plat.id === 'newspaper';
 
+  // Validate date is not before campaign start
+  const dateInput = document.getElementById('uploadDate');
+  if (date && CAMPAIGN.start_date && date < CAMPAIGN.start_date) {
+    dateInput.style.borderColor = 'var(--red-400)';
+    document.getElementById('btnNextPlatform').disabled = true;
+    showToast('לא ניתן להזין תאריך לפני תחילת הקמפיין (' + formatDate(CAMPAIGN.start_date) + ')');
+    return;
+  } else if (date) {
+    dateInput.style.borderColor = '';
+  }
+
   if (link && !isValidUrl(link)) {
     linkInput.style.borderColor = 'var(--red-400)';
     hint.textContent = 'הקישור חייב להתחיל ב-https:// או http://';
@@ -1145,6 +1161,12 @@ function showUpdateScreen(contentId) {
 
 async function saveUpdate() {
   if (!editingContentId || !currentUser) return;
+
+  const updateDateVal = document.getElementById('updateDate').value;
+  if (updateDateVal && CAMPAIGN.start_date && updateDateVal < CAMPAIGN.start_date) {
+    showToast('לא ניתן להזין תאריך לפני תחילת הקמפיין (' + formatDate(CAMPAIGN.start_date) + ')');
+    return;
+  }
 
   const metricInputs = document.querySelectorAll('#updateMetrics input[data-metric]');
   let allFilled = true;
