@@ -1,10 +1,11 @@
 name: Supabase keep-alive
 
-# Supabase Free pauses projects after 7 days without activity.
-# Ping the REST API twice a week to keep the production DB awake.
+# Supabase Free pauses projects after 7 days without "sufficient activity".
+# A single light REST ping twice a week was NOT enough (warning email 2026-09-30),
+# so ping daily and exercise real DB work: several tables + RPC functions.
 on:
   schedule:
-    - cron: '0 6 * * 1,4'   # Mon + Thu, 06:00 UTC
+    - cron: '17 5 * * *'   # daily, 05:17 UTC (off the hour to avoid GitHub queue delays)
   workflow_dispatch:
 
 jobs:
@@ -16,7 +17,17 @@ jobs:
         run: |
           URL=$(grep -oE "https://[a-z0-9]+\.supabase\.co" config.js | head -1)
           KEY=$(grep -oE "SUPABASE_ANON_KEY: '[^']+'" config.js | cut -d"'" -f2)
-          CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/campaigns?select=id&limit=1" \
-            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          echo "HTTP $CODE"
-          [ "$CODE" = "200" ] || { echo "Supabase not responding (paused?)"; exit 1; }
+          CID=$(grep -oE "CAMPAIGN_ID: '[^']+'" config.js | cut -d"'" -f2)
+          H=(-H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json")
+          FAIL=0
+          for T in campaigns organizations campaign_goals content_entries metrics_snapshots; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/$T?select=*&limit=5" "${H[@]}")
+            echo "GET $T -> $CODE"
+            [ "$CODE" = "200" ] || FAIL=1
+          done
+          for FN in get_campaign get_dashboard_data; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$URL/rest/v1/rpc/$FN" "${H[@]}" \
+              -d "{\"p_campaign_id\":\"$CID\"}")
+            echo "RPC $FN -> $CODE"
+          done
+          [ "$FAIL" = "0" ] || { echo "Supabase not responding (paused?)"; exit 1; }
