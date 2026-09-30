@@ -22,7 +22,7 @@
 
 ## Supabase
 - **Project:** siufqucjxcuhdfexzfkq.supabase.co
-- **Seed Campaign ID:** 87ffac94-18ab-43e3-bedb-f7cc877973f8
+- **Active Campaign ID:** b36aa0b1-f725-488c-ac2c-3e26281114a6 ("מניעת אלימות בזוגיות צעירה"; ה-seed הישן 87ffac94 נמחק)
 - **Admin password:** REDLINES2026 (SHA-256 hash, synced across all campaigns)
 - **Tables:** organizations, profiles (עם email + custom_org_name), campaigns, campaign_participants (עם status: active/suspended), campaign_goals, content_entries, metrics_snapshots
 - **RPC Functions:** login_user, get_campaign_pool (+ email/status), get_all_profiles (+ email), verify_admin (3-tier fallback), add_content_entry (+ status check), update_metrics (UPSERT + status check), delete_content_entry, get_user_contents, get_dashboard_data (+ custom_org_name), get_campaign, get_campaign_snapshots, register_profile (חדש), find_profiles_by_name (חדש), get_all_profiles_for_login (חדש), suspend_participant (חדש), reactivate_participant (חדש)
@@ -65,7 +65,7 @@
 ## Git
 - הודעות קומיט באנגלית, קצרות
 - לא לבקש אישור לפני קומיט
-- פוש דרך CLI (sandbox חוסם git push — המשתמש מריץ ידנית)
+- פוש דרך CLI — Claude מבצע push ל-main בעצמו
 
 ## SQL Migrations (כולם הורצו)
 - `supabase_migration.sql` — סכמה מלאה + seed data
@@ -77,7 +77,7 @@
 - `supabase_verify_admin_fix.sql` — verify_admin 3-tier fallback + snapshots_delete policy
 - `supabase_self_registration.sql` — ✅ הורץ: email + custom_org_name ב-profiles, status ב-campaign_participants, ארגון "אחר", RPCs חדשים, הסרת seed profiles
 
-## סטטוס (2026-09-03)
+## סטטוס (2026-09-30)
 - ✅ 24+ באגים/שיפורים תוקנו (QA + UAT 4 סבבים + 5 נוספים + סשן 13/8)
 - ✅ 14/14 בדיקות אוטומטיות עוברות
 - ✅ Multi-campaign support
@@ -106,6 +106,10 @@
 - ⏳ תכנית הגשה — מיכל רוצה להתנסות עוד לפני
 - ⏳ Handoff: fork + Supabase migration לארגון
 - ✅ תצוגת ארגון "אחר": מציג רק את שם הארגון בלי קידומת "אחר —" (פידבק מיכל 2026-09-03)
+- ✅ ולידציית תאריכים — אין הזנה לפני start_date של הקמפיין (2026-09-16)
+- ✅ ייצוא CSV משופר — מדדים דינמיים, escaping, שם קמפיין בקובץ (2026-09-16)
+- ✅ Supabase keep-alive — נוסף 24.09 אחרי pause שני; חוזק ל-יומי + טבלאות/RPCs ב-30.09 אחרי אזהרה נוספת
+- ⏳ רכישת דומיין social-impact-tracker.com + CNAME
 
 ## Training Package — עדכונים נדרשים
 - כלל: כל שינוי ב-flow של משתמש/מנהל חייב להתעדכן גם ב-training-package.html
