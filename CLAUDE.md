@@ -28,6 +28,7 @@
 - **RPC Functions:** login_user, get_campaign_pool (+ email/status), get_all_profiles (+ email), verify_admin (3-tier fallback), add_content_entry (+ status check), update_metrics (UPSERT + status check), delete_content_entry, get_user_contents, get_dashboard_data (+ custom_org_name), get_campaign, get_campaign_snapshots, register_profile (חדש), find_profiles_by_name (חדש), get_all_profiles_for_login (חדש), suspend_participant (חדש), reactivate_participant (חדש)
 - **RLS:** SELECT/INSERT/UPDATE/DELETE על כל הטבלאות (כולל campaigns_delete, snapshots_delete)
 - **DEFAULT_ADMIN_HASH:** SHA-256 של REDLINES2026 — fallback ב-config.js + verify_admin RPC כשאין קמפיינים
+- **Keep-alive:** `.github/workflows/supabase-keepalive.yml` — יומי 05:17 UTC, GET על 5 טבלאות + RPC get_campaign/get_dashboard_data. (פינג קל פעמיים בשבוע לא הספיק — אזהרת pause ב-30.09.2026.) אם מגיעה שוב אזהרה: לשקול כתיבה ל-DB או Pro
 
 ## Multi-Campaign Support
 - URL parameter `?campaign=<UUID>` על form.html ו-dashboard.html
